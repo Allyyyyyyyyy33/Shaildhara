@@ -1,0 +1,75 @@
+{
+  "generated_at": "2026-10-08T06:16:49+00:00",
+  "sources": {
+    "sachet": {
+      "id": "sachet",
+      "name": "NDMA SACHET (official CAP alerts)",
+      "kind": "WARNING",
+      "evidence": "OFFICIAL",
+      "status": "OK",
+      "detail": "15 current alert(s) from 11 feed(s)",
+      "records": 15,
+      "fetched_at": "2026-10-08T06:16:49+00:00",
+      "data_date": "2026-10-08T11:39:19+05:30",
+      "blockers": [],
+      "feeds_ok": [
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_uttarakhand.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_sikkim.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_ladakh.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_assam.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_nagaland.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_manipur.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_mizoram.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_meghalaya.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_tripura.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_bihar.xml",
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_punjab.xml"
+      ]
+    },
+    "nwdp_cwc": {
+      "id": "nwdp_cwc",
+      "name": "NWDP / CWC telemetry datasets",
+      "kind": "OBSERVED",
+      "evidence": "OFFICIAL",
+      "status": "NOT_RUN",
+      "detail": "",
+      "records": 0,
+      "fetched_at": "2026-10-08T06:21:45+00:00",
+      "data_date": null,
+      "blockers": []
+    },
+    "nwdp": {
+      "id": "nwdp",
+      "status": "ERROR",
+      "detail": "KeyError: 'Data Acquisition Time'",
+      "records": 0,
+      "fetched_at": "2026-10-08T06:22:35+00:00"
+    },
+    "imd": {
+      "id": "imd",
+      "name": "IMD API (district warnings, rainfall, nowcast, basin QPF)",
+      "kind": "WARNING/FORECAST",
+      "evidence": "OFFICIAL",
+      "status": "NEEDS_API_KEY",
+      "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
+      "records": 0,
+      "fetched_at": "2026-10-08T06:22:35+00:00",
+      "data_date": null,
+      "blockers": [
+        "IMD API key required (and possibly IP whitelisting by IMD)"
+      ]
+    },
+    "imd_geoserver": {
+      "id": "imd_geoserver",
+      "name": "IMD public district-warning map service (undocumented)",
+      "kind": "WARNING",
+      "evidence": "OFFICIAL",
+      "status": "DISABLED",
+      "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
+      "records": 0,
+      "fetched_at": "2026-10-08T06:22:35+00:00",
+      "data_date": null,
+      "blockers": []
+    }
+  }
+}
