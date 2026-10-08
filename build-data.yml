@@ -1,0 +1,36 @@
+name: Build SHAILDHARA data (manual)
+# One click: Actions tab -> "Build SHAILDHARA data (manual)" -> Run workflow.
+# CAUTION: some Indian government sites may refuse requests from GitHub's servers. If sources show as BLOCKED in the
+# Sources tab, run the same pipeline from Google Colab (README, option B), which is the route your endpoint test used.
+on:
+  workflow_dispatch:
+    inputs:
+      heavy:
+        description: "Also try the large WorldPop and OpenStreetMap downloads (slow)"
+        type: boolean
+        default: false
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - run: pip install -r requirements.txt
+      - name: Optional OpenStreetMap tools
+        if: ${{ inputs.heavy }}
+        run: sudo apt-get update && sudo apt-get install -y osmium-tool && pip install osmium
+      - name: Build
+        env:
+          IMD_API_KEY: ${{ secrets.IMD_API_KEY }}
+          SHAILDHARA_CONTACT: ${{ vars.SHAILDHARA_CONTACT }}
+        run: python -m pipeline.build_all ${{ inputs.heavy && '--heavy' || '' }}
+      - name: Commit the generated website data
+        run: |
+          git config user.name "shaildhara-bot"; git config user.email "bot@users.noreply.github.com"
+          git add -f web/data data/metadata/sources.jsonl || true
+          git commit -m "Update SHAILDHARA data" || echo "nothing to commit"
+          git push
