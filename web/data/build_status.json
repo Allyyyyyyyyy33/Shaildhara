@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-10-08T06:15:53+00:00",
+  "generated_at": "2026-10-08T07:32:13+00:00",
   "stages": {
     "static": {
-      "started_at": "2026-10-08T06:15:53+00:00",
+      "started_at": "2026-10-08T07:32:13+00:00",
       "datasets": {
         "admin_state": {
           "status": "OK",
@@ -22,7 +22,7 @@
         },
         "hydrorivers_asia": {
           "status": "BLOCKED",
-          "detail": "HTTP 403. Not downloaded; no retry or workaround.  -> download by hand and place in data/manual/hydrorivers_asia/"
+          "detail": "robots.txt disallows automated access to this address  -> download by hand and place in data/manual/hydrorivers_asia/"
         },
         "hydrobasins_asia": {
           "status": "BLOCKED_MANUAL",
@@ -45,45 +45,42 @@
           "detail": "No verified programmatic URL. Place file(s) in data/manual/ecosystems/ (No verified programmatic download. Place vector files in data/manual/ecosystems/; exposure is computed only for files present.)"
         }
       },
-      "finished_at": "2026-10-08T06:16:34+00:00"
+      "finished_at": "2026-10-08T07:32:57+00:00"
     },
     "foundation": {
-      "started_at": "2026-10-08T06:16:34+00:00",
+      "started_at": "2026-10-08T07:32:57+00:00",
       "layers": {
-        "admin_state": "MISSING (no raw or manual file)",
-        "admin_district": "MISSING (no raw or manual file)",
+        "admin_state": "OK (36 features)",
+        "admin_district": "OK (733 features)",
         "glacial_lakes_cwc": "OK (522 features)",
         "river_network_cwc": "OK (30395 features)"
       },
       "field_inference": {
+        "state_name_field": "state_name",
+        "district_name_field": "district",
         "lake_name_field": "name",
         "lake_area_field": "shape_Area"
       },
-      "blockers": [
-        "admin_state: no file found",
-        "admin_district: no file found",
-        "states layer missing: no map outline or state names",
-        "districts layer missing: alerts cannot be matched to districts"
-      ],
-      "finished_at": "2026-10-08T06:16:49+00:00"
+      "blockers": [],
+      "finished_at": "2026-10-08T07:33:15+00:00"
     },
     "connectivity": {
-      "started_at": "2026-10-08T06:16:49+00:00",
+      "started_at": "2026-10-08T07:33:15+00:00",
       "status": "BLOCKED",
       "blockers": [
-        "State layer missing: cannot define India for selecting river reaches"
+        "HydroRIVERS file not found (download blocked and nothing in data/manual/hydrorivers_asia/). Downstream tracing is switched off until this layer exists."
       ],
       "stats": {}
     },
     "exposure": {
-      "started_at": "2026-10-08T06:16:49+00:00",
+      "started_at": "2026-10-08T07:33:17+00:00",
       "status": "BLOCKED",
       "blockers": [
         "No river network exported (connectivity stage blocked), so exposure along rivers cannot be computed"
       ]
     },
     "live": {
-      "generated_at": "2026-10-08T06:16:49+00:00",
+      "generated_at": "2026-10-08T07:33:17+00:00",
       "sources": {
         "sachet": {
           "id": "sachet",
@@ -91,12 +88,13 @@
           "kind": "WARNING",
           "evidence": "OFFICIAL",
           "status": "OK",
-          "detail": "15 current alert(s) from 11 feed(s)",
-          "records": 15,
-          "fetched_at": "2026-10-08T06:16:49+00:00",
-          "data_date": "2026-10-08T11:39:19+05:30",
+          "detail": "34 current alert(s) from 12 feed(s)",
+          "records": 34,
+          "fetched_at": "2026-10-08T07:33:17+00:00",
+          "data_date": "2026-10-08T12:50:35+05:30",
           "blockers": [],
           "feeds_ok": [
+            "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_uttarakhand.xml",
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_sikkim.xml",
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_ladakh.xml",
@@ -108,6 +106,28 @@
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_tripura.xml",
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_bihar.xml",
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_punjab.xml"
+          ],
+          "feeds_failed": [
+            {
+              "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_himachal_pradesh.xml",
+              "http": 404
+            },
+            {
+              "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_jammu_and_kashmir.xml",
+              "http": 404
+            },
+            {
+              "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_arunachal_pradesh.xml",
+              "http": 404
+            },
+            {
+              "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_west_bengal.xml",
+              "http": 404
+            },
+            {
+              "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_uttar_pradesh.xml",
+              "http": 404
+            }
           ]
         },
         "nwdp_cwc": {
@@ -115,19 +135,12 @@
           "name": "NWDP / CWC telemetry datasets",
           "kind": "OBSERVED",
           "evidence": "OFFICIAL",
-          "status": "NOT_RUN",
-          "detail": "",
-          "records": 0,
-          "fetched_at": "2026-10-08T06:21:45+00:00",
-          "data_date": null,
+          "status": "OK",
+          "detail": "10838 station observation(s) from 70 recently updated dataset(s)",
+          "records": 10838,
+          "fetched_at": "2026-10-08T07:40:01+00:00",
+          "data_date": "2026-12-09T21:00:00+00:00",
           "blockers": []
-        },
-        "nwdp": {
-          "id": "nwdp",
-          "status": "ERROR",
-          "detail": "KeyError: 'Data Acquisition Time'",
-          "records": 0,
-          "fetched_at": "2026-10-08T06:22:35+00:00"
         },
         "imd": {
           "id": "imd",
@@ -137,7 +150,7 @@
           "status": "NEEDS_API_KEY",
           "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
           "records": 0,
-          "fetched_at": "2026-10-08T06:22:35+00:00",
+          "fetched_at": "2026-10-08T08:10:20+00:00",
           "data_date": null,
           "blockers": [
             "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -151,7 +164,7 @@
           "status": "DISABLED",
           "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
           "records": 0,
-          "fetched_at": "2026-10-08T06:22:35+00:00",
+          "fetched_at": "2026-10-08T08:10:20+00:00",
           "data_date": null,
           "blockers": []
         }
@@ -159,17 +172,12 @@
     }
   },
   "blockers": [
-    "Static data 'hydrorivers_asia': HTTP 403. Not downloaded; no retry or workaround.  -> download by hand and place in data/manual/hydrorivers_asia/",
+    "Static data 'hydrorivers_asia': robots.txt disallows automated access to this address  -> download by hand and place in data/manual/hydrorivers_asia/",
     "Static data 'hydrobasins_asia': No verified programmatic URL. Place file(s) in data/manual/hydrobasins_asia/ (Optional. Direct URL not verified; place ZIPs in data/manual/hydrobasins_asia/. Indian official basin boundaries (25 basins / 101 sub-basins) have no verified download.)",
     "Static data 'landcover': No verified programmatic URL. Place file(s) in data/manual/landcover/ (Tiles are large; place those covering the Himalayan arc in data/manual/landcover/. Cropland/built-up exposure is computed only where tiles exist.)",
     "Static data 'ecosystems': No verified programmatic URL. Place file(s) in data/manual/ecosystems/ (No verified programmatic download. Place vector files in data/manual/ecosystems/; exposure is computed only for files present.)",
-    "foundation: admin_state: no file found",
-    "foundation: admin_district: no file found",
-    "foundation: states layer missing: no map outline or state names",
-    "foundation: districts layer missing: alerts cannot be matched to districts",
-    "connectivity: State layer missing: cannot define India for selecting river reaches",
+    "connectivity: HydroRIVERS file not found (download blocked and nothing in data/manual/hydrorivers_asia/). Downstream tracing is switched off until this layer exists.",
     "exposure: No river network exported (connectivity stage blocked), so exposure along rivers cannot be computed",
-    "Live source 'nwdp': KeyError: 'Data Acquisition Time'",
     "Live source 'imd': IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
     "Live source 'imd': IMD API key required (and possibly IP whitelisting by IMD)"
   ],
