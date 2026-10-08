@@ -1,0 +1,102 @@
+{
+  "_comment": "Static dataset registry. 'documented' URLs were copied from the official portal page on 2026-10-04 but never downloaded from the build environment. 'candidate' URLs are NOT verified: the pipeline tries them once, records the real outcome, and falls back to data/manual/<id>/.",
+  "static": [
+    {
+      "id": "admin_state", "title": "State Boundary (states and UTs)",
+      "organisation": "NWIC National Water Data Portal (producer metadata: Geological Survey of India; page branding: Survey of India)",
+      "landing_page": "https://nwdp.nwic.gov.in/dataset/state-boundary",
+      "urls": [{"url": "https://nwdp.nwic.gov.in/dataset/dd960900-34cc-4486-a95c-83200d2f2c7b/resource/f039e721-132c-4a24-9e5e-07af03064b4d/download/state_nwic_geojson.zip", "status": "documented"}],
+      "filename": "state_nwic_geojson.zip", "format": "GeoJSON in ZIP", "data_date": "2025-05-02",
+      "coverage": "States and UTs of India", "authority": "indian_government",
+      "licence": "Portal copyright policy: free reuse with prominent source acknowledgement; no dataset-level licence field shown",
+      "limitations": "Not confirmed as the legal external boundary of India. Analysis use only; do not present as an official map."
+    },
+    {
+      "id": "admin_district", "title": "District Boundary",
+      "organisation": "NWIC National Water Data Portal (producer metadata: Geological Survey of India; page branding: Survey of India)",
+      "landing_page": "https://nwdp.nwic.gov.in/dataset/district-boundary",
+      "urls": [{"url": "https://nwdp.nwic.gov.in/dataset/6c1af675-1dec-4927-882c-c1ba9d73f76b/resource/8d9aa2e9-9806-4f26-a4ac-48ba21e9b96d/download/district_nwic_geojson.zip", "status": "documented"}],
+      "filename": "district_nwic_geojson.zip", "format": "GeoJSON in ZIP", "data_date": "2025-05-05",
+      "coverage": "733 districts (portal description)", "authority": "indian_government",
+      "licence": "Portal copyright policy: free reuse with prominent source acknowledgement; no dataset-level licence field shown",
+      "limitations": "District boundaries change; check the data date. Not an official map."
+    },
+    {
+      "id": "river_network_cwc", "title": "River Network (river lines)",
+      "organisation": "Central Water Commission (CWC) via NWIC National Water Data Portal",
+      "landing_page": "https://nwdp.nwic.gov.in/dataset/river-line",
+      "urls": [{"url": "https://nwdp.nwic.gov.in/dataset/3209962f-d0ff-45b8-910a-209bf69a0ccf/resource/6e552705-842d-40a4-92b2-8506bb66df2a/download/river_network.geojson", "status": "documented"}],
+      "filename": "river_network.geojson", "format": "GeoJSON", "data_date": "2025-11-17",
+      "coverage": "Rivers (completeness not stated by the portal)", "authority": "indian_government",
+      "licence": "'Other (Open)' on the resource page; acknowledge source",
+      "limitations": "Flow direction and connectivity are not documented. Used here only for river NAMES, never for downstream tracing."
+    },
+    {
+      "id": "glacial_lakes_cwc", "title": "Glacial Lakes (Himalayan states)",
+      "organisation": "Central Water Commission (CWC) via NWIC National Water Data Portal",
+      "landing_page": "https://nwdp.nwic.gov.in/dataset/glacial-lakes",
+      "urls": [{"url": "https://nwdp.nwic.gov.in/dataset/e699f78c-a1b2-4d8f-b4d8-c413ae500724/resource/c4fa29dc-7bb6-4db4-b842-6d57fc647d97/download/glacial_lake.geojson", "status": "documented"}],
+      "filename": "glacial_lake.geojson", "format": "GeoJSON", "data_date": "2025-11-20",
+      "coverage": "Himalayan states only", "authority": "indian_government",
+      "licence": "No dataset-level licence field shown; acknowledge source",
+      "limitations": "Static inventory. Current lake change is only in CWC monthly PDF reports (manual)."
+    },
+    {
+      "id": "hydrorivers_asia", "title": "HydroRIVERS v1.0 - Asia (river reaches with downstream links)",
+      "organisation": "HydroSHEDS (WWF, McGill University and partners) - international gap-filler",
+      "landing_page": "https://www.hydrosheds.org/",
+      "urls": [{"url": "https://data.hydrosheds.org/file/HydroRIVERS/HydroRIVERS_v10_as_shp.zip", "status": "candidate"}],
+      "filename": "HydroRIVERS_v10_as_shp.zip", "format": "Shapefile in ZIP", "data_date": "v1.0 (file name)",
+      "coverage": "Asia; selected where touching India", "authority": "international_open",
+      "licence": "HydroSHEDS licence agreement: free with attribution (read it on hydrosheds.org)",
+      "limitations": "Built from ~500 m terrain data: small Himalayan streams are missing; discharge values are MODELLED long-term averages. Candidate URL unverified: the pipeline records whether it worked."
+    },
+    {
+      "id": "hydrobasins_asia", "title": "HydroBASINS - Asia (basin hierarchy)",
+      "organisation": "HydroSHEDS - international gap-filler",
+      "landing_page": "https://www.hydrosheds.org/",
+      "urls": [], "retrieval": "manual", "filename": "", "format": "Shapefile ZIPs by level", "data_date": "see file name",
+      "coverage": "Asia", "authority": "international_open",
+      "licence": "HydroSHEDS licence agreement: free with attribution",
+      "limitations": "Optional. Direct URL not verified; place ZIPs in data/manual/hydrobasins_asia/. Indian official basin boundaries (25 basins / 101 sub-basins) have no verified download."
+    },
+    {
+      "id": "worldpop_india", "title": "WorldPop population count 2020, 1 km, India",
+      "organisation": "WorldPop, University of Southampton - international gap-filler (Census village data is not accessible)",
+      "landing_page": "https://www.worldpop.org/",
+      "urls": [{"url": "https://data.worldpop.org/GIS/Population/Global_2000_2020_1km/2020/IND/ind_ppp_2020_1km_Aggregated.tif", "status": "candidate"}],
+      "filename": "ind_ppp_2020_1km_Aggregated.tif", "format": "GeoTIFF", "data_date": "2020 (modelled)",
+      "coverage": "India", "authority": "international_open", "heavy": true,
+      "licence": "WorldPop open licence (CC BY 4.0 per WorldPop; verify on the download page)",
+      "limitations": "Modelled estimate, not a census. Candidate URL unverified."
+    },
+    {
+      "id": "osm_india", "title": "OpenStreetMap India extract (places, roads, bridges, dams)",
+      "organisation": "OpenStreetMap contributors via Geofabrik - international/open",
+      "landing_page": "https://download.geofabrik.de/asia/india.html",
+      "urls": [{"url": "https://download.geofabrik.de/asia/india-latest.osm.pbf", "status": "candidate"}],
+      "filename": "india-latest.osm.pbf", "format": "OSM PBF", "data_date": "latest at download",
+      "coverage": "India", "authority": "international_open", "heavy": true,
+      "licence": "ODbL: attribution and share-alike apply to derived databases",
+      "limitations": "Crowd-sourced: incomplete in mountain areas, bridge tagging uneven. Candidate URL unverified."
+    },
+    {
+      "id": "landcover", "title": "Land cover (ESA WorldCover 10 m tiles or NRSC Bhuvan LULC)",
+      "organisation": "ESA WorldCover / NRSC - manual",
+      "landing_page": "https://esa-worldcover.org/",
+      "urls": [], "retrieval": "manual", "filename": "", "format": "GeoTIFF tiles", "data_date": "see file",
+      "coverage": "tiles you provide", "authority": "international_open",
+      "licence": "Check provider licence",
+      "limitations": "Tiles are large; place those covering the Himalayan arc in data/manual/landcover/. Cropland/built-up exposure is computed only where tiles exist."
+    },
+    {
+      "id": "ecosystems", "title": "Protected areas / wetlands / forest polygons",
+      "organisation": "Indian sources (WII/ENVIS/FSI/NWIC wetlands) - manual",
+      "landing_page": "",
+      "urls": [], "retrieval": "manual", "filename": "", "format": "Shapefile/GeoJSON", "data_date": "see file",
+      "coverage": "files you provide", "authority": "indian_government",
+      "licence": "Check provider terms",
+      "limitations": "No verified programmatic download. Place vector files in data/manual/ecosystems/; exposure is computed only for files present."
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SHAILDHARA - From the Peak to the People</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header id="top">
+  <div class="brand">
+    <h1>SHAILDHARA</h1>
+    <span class="tag">From the Peak to the People</span>
+  </div>
+  <div id="top-status" aria-live="polite"></div>
+  <div class="legend" id="legend" aria-label="Evidence labels"></div>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main id="layout">
+  <aside id="left" aria-label="Controls">
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="signals" role="tab">Signals</button>
+      <button class="tab" data-tab="layers" role="tab">Layers</button>
+      <button class="tab" data-tab="search" role="tab">Search</button>
+      <button class="tab" data-tab="sources" role="tab">Sources</button>
+    </nav>
+    <section id="tab-signals" class="tabpane active"></section>
+    <section id="tab-layers" class="tabpane"></section>
+    <section id="tab-search" class="tabpane">
+      <input id="q" type="search" placeholder="Search districts, states, glacial lakes, alerts..." autocomplete="off" aria-label="Search">
+      <div id="results"></div>
+    </section>
+    <section id="tab-sources" class="tabpane"></section>
+  </aside>
+
+  <section id="mapwrap">
+    <div id="map" role="application" aria-label="India map"></div>
+    <aside id="chainpanel" hidden aria-label="Chain"></aside>
+  </section>
+</main>
+
+<footer>
+  SHAILDHARA connects and explains available evidence. It does <strong>not</strong> predict disasters, floods, landslides or losses.
+  Official forecasts and warnings remain the responsibility of the issuing agencies and are shown exactly as issued.
+  Map outlines are for analysis and are not an official map of India.
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="chain.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

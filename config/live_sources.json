@@ -1,0 +1,36 @@
+{
+  "_comment": "Live-source settings. Put working SACHET feed URLs from your endpoint test into sachet.feeds. Never put API keys here: use the IMD_API_KEY environment variable (or Colab secret / GitHub secret).",
+  "sachet": {
+    "base": "https://sachet.ndma.gov.in",
+    "feeds": [],
+    "discover_from_capfeed_page": true,
+    "try_state_pattern_guesses": true,
+    "state_slugs": ["uttarakhand", "himachal_pradesh", "sikkim", "jammu_and_kashmir", "ladakh", "arunachal_pradesh", "assam", "west_bengal", "nagaland", "manipur", "mizoram", "meghalaya", "tripura", "bihar", "uttar_pradesh", "punjab"],
+    "max_cap_files_per_run": 400
+  },
+  "nwdp": {
+    "host": "https://nwdp.nwic.gov.in",
+    "queries": ["river water level", "water level telemetry", "rainfall telemetry", "discharge", "snowfall"],
+    "fresh_days": 14,
+    "max_rows_per_resource": 2000
+  },
+  "imd": {
+    "enabled": true,
+    "base": "https://api.imd.gov.in/api/v1/",
+    "auth_header_name": "Authorization",
+    "auth_header_prefix": "Bearer ",
+    "endpoints": {
+      "district_warnings": "districtwarning",
+      "district_rainfall": "districtrainfall",
+      "district_nowcast": "districtnowcast",
+      "basin_qpf": "basinqpf"
+    },
+    "notes": "IMD describes key-based JWT access and an IP-whitelisting step. If calls fail from your build machine, ask IMD's nodal officer to whitelist it."
+  },
+  "imd_geoserver": {
+    "enabled": false,
+    "url": "https://reactjs.imd.gov.in/geoserver/wfs",
+    "typename": "imd:district_warnings_india",
+    "notes": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
+  }
+}
