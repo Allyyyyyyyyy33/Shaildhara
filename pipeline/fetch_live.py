@@ -150,7 +150,7 @@ def sachet(http, cfg, dists, status):
     feeds = list(dict.fromkeys(feeds))
     etags = read_json(CACHE / "sachet_etags.json", {})
     cap_cache = read_json(CACHE / "sachet_cap_cache.json", {})
-    items_all, feed_ok = [], []
+    items_all, feed_ok, feeds_failed = [], [], []
     for f in feeds:
         r = http.get(f, etag=etags.get(f), max_bytes=10_000_000)
         if r["skipped"] or r["unreachable"]:
@@ -162,12 +162,14 @@ def sachet(http, cfg, dists, status):
             feed_ok.append(f)
             continue
         if r["status"] != 200:
+            feeds_failed.append({"feed": f, "http": r["status"]})
             if r["status"] in (401, 403):
                 entry["blockers"].append(f"{f}: HTTP {r['status']} (login or firewall; not worked around)")
             continue
         try:
             items = parse_rss(r["content"])
         except ET.ParseError:
+            feeds_failed.append({"feed": f, "http": r["status"], "error": "not valid RSS/XML"})
             continue
         feed_ok.append(f)
         if r["headers"].get("ETag"):
@@ -219,7 +221,7 @@ def sachet(http, cfg, dists, status):
     keep = {it.get("link") for it in items_all}
     save_json(CACHE / "sachet_cap_cache.json", {k: v for k, v in cap_cache.items() if k in keep})
     dates = [parse_dt(a["sent"]) for a in alerts if a.get("sent")]
-    entry.update(records=len(alerts), feeds_ok=feed_ok, data_date=(max(dates).isoformat() if dates else None))
+    entry.update(records=len(alerts), feeds_ok=feed_ok, feeds_failed=feeds_failed, data_date=(max(dates).isoformat() if dates else None))
     if not feed_ok:
         entry.update(status="BLOCKED", detail="No SACHET feed could be read. Add working feed URLs from your endpoint test to config/live_sources.json (sachet.feeds).")
     elif not alerts:
@@ -276,30 +278,47 @@ def nwdp(http, cfg, status):
                 "id": ds["id"], "name": ds.get("name"), "title": ds.get("title"), "organisation": org, "modified": ds.get("metadata_modified"),
                 "fresh": bool(md and md.date() >= fresh_cut), "url": f"{host}/dataset/{ds.get('name')}",
                 "resources": [{"id": x.get("id"), "format": x.get("format"), "datastore": bool(x.get("datastore_active"))} for x in ds.get("resources", [])]}
-    # try latest rows of fresh datastore-enabled resources
+    # try latest rows of fresh datastore-enabled resources (each resource isolated: one bad schema never stops the rest)
+    schemas = []
     for ds in list(catalogue.values()):
         if not ds["fresh"]:
             continue
         for res in ds["resources"]:
             if not res["datastore"]:
                 continue
-            r = http.get(host + "/api/3/action/datastore_search", params={"resource_id": res["id"], "limit": nc.get("max_rows_per_resource", 2000)},
-                         max_bytes=15_000_000)
-            if not (r["ok"] and r["status"] == 200):
-                continue
             try:
+                limit = nc.get("max_rows_per_resource", 2000)
+                r = http.get(host + "/api/3/action/datastore_search", params={"resource_id": res["id"], "limit": limit}, max_bytes=15_000_000)
+                if not (r["ok"] and r["status"] == 200):
+                    res["schema_note"] = f"datastore_search HTTP {r.get('status')}"
+                    continue
                 d = json.loads(r["content"].decode("utf-8", "ignore"))["result"]
-            except Exception:
-                continue
-            fields = [f["id"] for f in d.get("fields", []) if f["id"] != "_id"]
-            lat = next((f for f in fields if LAT.match(f)), None)
-            lon = next((f for f in fields if LON.match(f)), None)
-            stn = next((f for f in fields if STN.search(f)), None)
-            tm = next((f for f in fields if TIME.search(f)), None)
-            vl = next((f for f in fields if VAL.search(f)), None)
-            res["schema"] = {"lat": lat, "lon": lon, "station": stn, "time": tm, "value": vl}
-            if lat and lon and stn and tm and vl:
-                df = pd.DataFrame(d.get("records", []))
+                fields = [f["id"] for f in d.get("fields", []) if f["id"] != "_id"]
+                lat = next((f for f in fields if LAT.match(f)), None)
+                lon = next((f for f in fields if LON.match(f)), None)
+                stn = next((f for f in fields if STN.search(f)), None)
+                tm = next((f for f in fields if TIME.search(f)), None)
+                vl = next((f for f in fields if VAL.search(f)), None)
+                recs = d.get("records", []) or []
+                res["schema"] = {"lat": lat, "lon": lon, "station": stn, "time": tm, "value": vl}
+                schemas.append({"dataset": ds["title"], "resource": res["id"], "fields": fields[:30], "schema": res["schema"],
+                                "rows_returned": len(recs), "total_rows": d.get("total"), "first_record_keys": list(recs[0].keys())[:30] if recs else []})
+                if not (lat and lon and stn and tm and vl):
+                    res["schema_note"] = "fields not recognised as station + coordinates + time + value"
+                    continue
+                if not recs:
+                    res["schema_note"] = "datastore returned no rows"
+                    continue
+                if isinstance(d.get("total"), int) and d["total"] > len(recs):
+                    # more rows exist than one page: ask for the newest rows first
+                    r2 = http.get(host + "/api/3/action/datastore_search", params={"resource_id": res["id"], "limit": limit, "sort": f"{tm} desc"}, max_bytes=15_000_000)
+                    if r2["ok"] and r2["status"] == 200:
+                        recs = json.loads(r2["content"].decode("utf-8", "ignore"))["result"].get("records", []) or recs
+                df = pd.DataFrame(recs)
+                missing = [c for c in (lat, lon, stn, tm, vl) if c not in df.columns]
+                if df.empty or missing:
+                    res["schema_note"] = f"declared fields missing from records: {missing}"
+                    continue
                 df["_t"] = pd.to_datetime(df[tm], errors="coerce", utc=True)
                 df = df.dropna(subset=["_t"]).sort_values("_t").groupby(stn).tail(1)
                 for _, row in df.iterrows():
@@ -309,6 +328,9 @@ def nwdp(http, cfg, status):
                                     "kind": "OBSERVED"})
                     except Exception:
                         continue
+            except Exception as e:
+                res["schema_note"] = "failed: " + short(e, 160)
+                entry["blockers"].append(f"{ds.get('title')}: {short(e, 160)}")
     dates = [pd.Timestamp(o["observed_at"]) for o in obs]
     entry.update(records=len(obs), data_date=(max(dates).isoformat() if dates else None))
     n_fresh = sum(1 for c in catalogue.values() if c["fresh"])
@@ -319,7 +341,7 @@ def nwdp(http, cfg, status):
     else:
         entry.update(status="CATALOGUE_ONLY",
                      detail=f"{len(catalogue)} dataset(s) found, {n_fresh} updated in the last {nc.get('fresh_days', 14)} days, but no station observations could be extracted automatically (schema not recognised or not queryable). See the catalogue.")
-    save_json(WEB_LIVE / "nwdp_catalogue.json", {"generated_at": utc_iso(), "datasets": list(catalogue.values())})
+    save_json(WEB_LIVE / "nwdp_catalogue.json", {"generated_at": utc_iso(), "datasets": list(catalogue.values()), "schemas_checked": schemas})
     save_json(WEB_LIVE / "river_observations.json", {"generated_at": utc_iso(), "kind": "OBSERVED", "observations": obs})
     record_source(dict(source_id="nwdp_cwc", dataset_id="nwdp_cwc", title="NWDP/CWC telemetry catalogue", organisation="NWIC / Central Water Commission",
                        authority="indian_government", landing_page=host, url=host + "/api/3/action/package_search", retrieved_at=utc_iso(),

@@ -36,8 +36,23 @@ def _safe_extract(zip_path, out_dir):
     return out_dir
 
 
+VECTOR_EXT = (".geojson", ".json", ".shp", ".gpkg", ".kml", ".gml")
+ZIP_DIAG = {}      # ds_id -> what a ZIP actually contained when no vector file was found in it
+
+
+def _vectors_in(folder):
+    out = []
+    for p in sorted(folder.rglob("*")):
+        if (p.is_file() and p.suffix.lower() in VECTOR_EXT and "__MACOSX" not in p.parts and not p.name.startswith("._")):
+            out.append(p)
+    # real geodata first; plain .json (often metadata) last
+    out.sort(key=lambda p: (p.suffix.lower() == ".json", p.suffix.lower() != ".shp" and p.suffix.lower() != ".geojson", str(p)))
+    return out
+
+
 def find_vectors(ds_id):
-    """Vector files for a dataset (manual files win over raw downloads). ZIPs are extracted to a copy."""
+    """Vector files for a dataset (manual files win over raw downloads). ZIPs are extracted to a copy; nested ZIPs and
+    upper-case extensions are handled. If a ZIP holds no vector file, its listing is kept in ZIP_DIAG so the build report can say why."""
     found = []
     for base in (MANUAL / ds_id, RAW / ds_id):
         if not base.exists():
@@ -47,20 +62,59 @@ def find_vectors(ds_id):
                 continue
             if p.suffix.lower() == ".zip":
                 out = _safe_extract(p, INTERIM / ds_id / p.stem)
-                for ext in ("*.geojson", "*.json", "*.shp", "*.gpkg"):
-                    found += sorted(out.rglob(ext))
-            elif p.suffix.lower() in (".geojson", ".json", ".shp", ".gpkg"):
+                for _ in range(3):                      # nested ZIPs
+                    inner = [z for z in out.rglob("*") if z.is_file() and z.suffix.lower() == ".zip"]
+                    for z in inner:
+                        dest = z.with_name(z.stem + "_unzipped")
+                        if not dest.exists():
+                            try:
+                                _safe_extract(z, dest)
+                            except Exception:
+                                pass
+                    if not inner:
+                        break
+                vecs = _vectors_in(out)
+                if not vecs:
+                    names = sorted(str(f.relative_to(out)) for f in out.rglob("*") if f.is_file())
+                    ZIP_DIAG[ds_id] = f"{p.name} ({p.stat().st_size/1e6:.1f} MB) held {len(names)} file(s), none a recognised vector format: " + ", ".join(names[:25])
+                found += vecs
+            elif p.suffix.lower() in VECTOR_EXT:
                 found.append(p)
         if found:
             break
     return found
 
 
+# Layers published by NWIC/CWC are in projected metres but carry no CRS, so readers default them to EPSG:4326.
+# We only accept a CRS that is verified by the coordinates themselves.
+INFER_CANDIDATES = ("EPSG:7755",)           # WGS 84 / India NSF LCC (also used for distances in this project)
+INDIA_LONLAT = (60.0, 0.0, 105.0, 42.0)     # generous box: lon_min, lat_min, lon_max, lat_max
+
+
+def _looks_geographic(b):
+    return all(v == v for v in b) and -181 <= b[0] <= 361 and -181 <= b[2] <= 361 and -91 <= b[1] <= 91 and -91 <= b[3] <= 91
+
+
+def _infer_crs(gdf):
+    """Return (crs, note). Only called when the declared/assumed CRS is geographic but coordinates are not degrees."""
+    from pyproj import Transformer
+    b = gdf.total_bounds
+    for code in INFER_CANDIDATES:
+        t = Transformer.from_crs(code, "EPSG:4326", always_xy=True)
+        lo1, la1 = t.transform(b[0], b[1])
+        lo2, la2 = t.transform(b[2], b[3])
+        if INDIA_LONLAT[0] <= min(lo1, lo2) and max(lo1, lo2) <= INDIA_LONLAT[2] and INDIA_LONLAT[1] <= min(la1, la2) and max(la1, la2) <= INDIA_LONLAT[3]:
+            return code, (f"CRS NOT DECLARED in file and coordinates are not degrees (bounds {[round(float(x)) for x in b]}). "
+                          f"{code} inferred because the whole layer then falls inside India ({min(lo1, lo2):.1f}-{max(lo1, lo2):.1f}E, {min(la1, la2):.1f}-{max(la1, la2):.1f}N). ASSUMPTION - verify with the data owner.")
+    return None, ""
+
+
 def read_vector(path, bbox=None):
     gdf = gpd.read_file(path, bbox=bbox, engine="pyogrio") if bbox else gpd.read_file(path, engine="pyogrio")
     meta = {"file": str(path), "rows_read": int(len(gdf)), "notes": []}
+    is_json = str(path).lower().endswith((".geojson", ".json"))
     if gdf.crs is None:
-        if str(path).lower().endswith((".geojson", ".json")):
+        if is_json:
             gdf = gdf.set_crs(STORAGE_CRS)
             meta["crs_original"] = "NONE IN FILE (EPSG:4326 assumed per GeoJSON standard)"
             meta["notes"].append("GeoJSON without CRS: EPSG:4326 assumed per the GeoJSON standard")
@@ -68,6 +122,13 @@ def read_vector(path, bbox=None):
             raise ValueError("No CRS in file and not GeoJSON - refusing to guess")
     else:
         meta["crs_original"] = gdf.crs.to_string()
+    if len(gdf) and gdf.crs is not None and gdf.crs.is_geographic and not _looks_geographic(gdf.total_bounds):
+        crs, note = _infer_crs(gdf)
+        if crs is None:
+            raise ValueError(f"Coordinates are not degrees (bounds {list(map(float, gdf.total_bounds))}) and no candidate CRS places them inside India - refusing to guess")
+        gdf = gdf.set_crs(crs, allow_override=True)
+        meta["crs_original"] = f"{crs} (INFERRED - not declared in file)"
+        meta["notes"].append(note)
     return gdf.to_crs(STORAGE_CRS).reset_index(drop=True), meta
 
 
@@ -184,11 +245,21 @@ def run():
         try:
             vecs = find_vectors(ds_id)
             if not vecs:
-                report["layers"][ds_id] = "MISSING (no raw or manual file)"
-                report["blockers"].append(f"{ds_id}: no file found")
-                log(f"foundation: {ds_id} missing")
+                why = ZIP_DIAG.get(ds_id) or "no raw or manual file"
+                report["layers"][ds_id] = "MISSING (" + why[:200] + ")"
+                report["blockers"].append(f"{ds_id}: no usable vector file - {why}")
+                log(f"foundation: {ds_id} missing - {why}")
                 continue
-            gdf, meta = read_vector(vecs[0])
+            gdf = meta = None
+            tried = []
+            for vp in vecs[:6]:
+                try:
+                    gdf, meta = read_vector(vp)
+                    break
+                except Exception as e:
+                    tried.append(f"{Path(vp).name}: {short(e, 160)}")
+            if gdf is None:
+                raise ValueError("no vector file could be read - " + " | ".join(tried))
             gdf, idinfo = standardise(gdf, ds_id)
             layers[ds_id] = gdf
             a = audit(gdf, ds_id, meta, idinfo)

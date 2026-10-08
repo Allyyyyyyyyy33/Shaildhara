@@ -1,7 +1,6 @@
 name: Build SHAILDHARA data (manual)
-# One click: Actions tab -> "Build SHAILDHARA data (manual)" -> Run workflow.
-# CAUTION: some Indian government sites may refuse requests from GitHub's servers. If sources show as BLOCKED in the
-# Sources tab, run the same pipeline from Google Colab (README, option B), which is the route your endpoint test used.
+# Actions tab -> "Build SHAILDHARA data (manual)" -> Run workflow. Builds every accessible dataset and commits web/data.
+# Anything a government server refuses is recorded as BLOCKED in web/data/build_status.json - nothing is invented.
 on:
   workflow_dispatch:
     inputs:
@@ -20,6 +19,17 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.11" }
       - run: pip install -r requirements.txt
+      - name: Use files you attached to the "data-v1" release (optional; e.g. HydroRIVERS)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/rel
+          if gh release view data-v1 >/dev/null 2>&1; then
+            gh release download data-v1 --dir /tmp/rel --clobber || true
+            python tools/stage_release_files.py /tmp/rel data/manual
+          else
+            echo "no data-v1 release - nothing to stage"
+          fi
       - name: Optional OpenStreetMap tools
         if: ${{ inputs.heavy }}
         run: sudo apt-get update && sudo apt-get install -y osmium-tool && pip install osmium
@@ -28,9 +38,12 @@ jobs:
           IMD_API_KEY: ${{ secrets.IMD_API_KEY }}
           SHAILDHARA_CONTACT: ${{ vars.SHAILDHARA_CONTACT }}
         run: python -m pipeline.build_all ${{ inputs.heavy && '--heavy' || '' }}
+      - name: Deploy check
+        run: python -m pipeline.check_deploy || true
       - name: Commit the generated website data
         run: |
           git config user.name "shaildhara-bot"; git config user.email "bot@users.noreply.github.com"
           git add -f web/data data/metadata/sources.jsonl || true
           git commit -m "Update SHAILDHARA data" || echo "nothing to commit"
+          git pull --rebase || true
           git push

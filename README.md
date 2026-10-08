@@ -20,31 +20,19 @@ statement with how it is known.
 `web/data/` is **empty on purpose**. The site shows "No data has been built yet" until you run the pipeline. Nothing is
 pre-filled, so nothing can be mistaken for real data.
 
-## Option A (recommended first): run it in Google Colab - one cell
+## Option A (fastest, recommended): Colab notebook + Netlify Drop
 
-Your endpoint test already ran from Colab, so this route is known to reach the sources.
+1. Open `SHAILDHARA_build.ipynb` in Google Colab (File > Upload notebook).
+2. Run the cells top to bottom; upload `shaildhara_project.zip` when asked. The notebook builds the data, prints every blocker,
+   runs the deploy check and downloads `web.zip`.
+3. Unzip `web.zip`, test with `python -m http.server` inside `web/` (http://localhost:8000), then drag the `web/` folder onto
+   https://app.netlify.com/drop for a public link. `netlify.toml` is included if you connect a repository instead.
+4. Put working SACHET feed URLs from your endpoint test into `config/live_sources.json` (`sachet.feeds`) for reliable alerts.
 
-1. Zip this folder (or upload the zip you were given) to Colab: Files panel > Upload.
-2. In a new notebook, paste into ONE cell and run:
-
-```python
-!unzip -q -o shaildhara_project.zip -d /content && cd /content/shaildhara && pip -q install -r requirements.txt
-import os
-os.environ["SHAILDHARA_CONTACT"] = ""            # optional: your email
-# os.environ["IMD_API_KEY"] = "..."              # only after IMD issues you a key; prefer Colab Secrets
-%cd /content/shaildhara
-!python -m pipeline.build_all
-```
-3. Put working SACHET feed URLs from your test into `config/live_sources.json` (`sachet.feeds`) and run again with
-   `!python -m pipeline.build_all --live`.
-4. Download the `web/` folder (`!zip -r web.zip web`), unzip it on your computer, and test it with
-   `python -m http.server` inside the folder, then open http://localhost:8000.
-5. Publish by dragging the `web/` folder onto Netlify Drop (or any static host).
-
-## Option B: GitHub (one click, scheduled live refresh)
+## Option B: GitHub (scheduled live refresh + free hosting on GitHub Pages)
 
 Create a GitHub repository, upload this folder, then: *Actions > Build SHAILDHARA data (manual) > Run workflow*.
-The workflow `refresh-live.yml` refreshes live sources every 3 hours. **Caution:** some Indian government sites may refuse
+`build-data.yml` (manual) builds everything and commits `web/data`; `refresh-live.yml` refreshes live sources every 3 hours; `pages.yml` publishes `web/` to GitHub Pages (Settings > Pages > Source: GitHub Actions). **Caution:** some Indian government sites may refuse
 GitHub's servers. If the Sources tab shows BLOCKED, use Option A. Add the IMD key under
 *Settings > Secrets and variables > Actions > New secret* named `IMD_API_KEY`.
 
@@ -77,9 +65,24 @@ GitHub's servers. If the Sources tab shows BLOCKED, use Option A. Add the IMD ke
 * Not yet tested against the real government servers: the first run in Colab is the real test. Read `web/data/build_status.json`
   (also shown in the Sources tab) for every blocker and the exact next action.
 
+## Deploy check
+
+`python -m pipeline.check_deploy` states what the public site will show and refuses (exit 1) if data is missing or if the fictional test fixtures are present in `web/data`.
+
 ## Developer tests
 
 ```
 python tests/test_pipeline.py                      # pipeline against fictional fixtures in a temp folder
 node tests/test_chain.js <web/data folder built by that test>
 ```
+
+
+## Files that cannot be downloaded automatically (e.g. HydroRIVERS)
+
+HydroSHEDS refuses automated downloads (HTTP 403), and automated access is not worked around. Download the file in a browser, then on GitHub:
+Releases > Draft a new release > tag `data-v1` > attach the file (HydroRIVERS_v10_as_shp.zip, ind_ppp_*.tif, *.osm.pbf, ... - routed by file name,
+see `tools/stage_release_files.py`) > Publish release. The next build picks it up automatically.
+
+## Secrets (never paste keys into chat or files)
+
+Settings > Secrets and variables > Actions > New repository secret: `IMD_API_KEY`.

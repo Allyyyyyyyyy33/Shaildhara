@@ -5,12 +5,36 @@
     "feeds": [],
     "discover_from_capfeed_page": true,
     "try_state_pattern_guesses": true,
-    "state_slugs": ["uttarakhand", "himachal_pradesh", "sikkim", "jammu_and_kashmir", "ladakh", "arunachal_pradesh", "assam", "west_bengal", "nagaland", "manipur", "mizoram", "meghalaya", "tripura", "bihar", "uttar_pradesh", "punjab"],
+    "state_slugs": [
+      "india",
+      "uttarakhand",
+      "himachal_pradesh",
+      "sikkim",
+      "jammu_and_kashmir",
+      "ladakh",
+      "arunachal_pradesh",
+      "assam",
+      "west_bengal",
+      "nagaland",
+      "manipur",
+      "mizoram",
+      "meghalaya",
+      "tripura",
+      "bihar",
+      "uttar_pradesh",
+      "punjab"
+    ],
     "max_cap_files_per_run": 400
   },
   "nwdp": {
     "host": "https://nwdp.nwic.gov.in",
-    "queries": ["river water level", "water level telemetry", "rainfall telemetry", "discharge", "snowfall"],
+    "queries": [
+      "river water level",
+      "water level telemetry",
+      "rainfall telemetry",
+      "discharge",
+      "snowfall"
+    ],
     "fresh_days": 14,
     "max_rows_per_resource": 2000
   },
