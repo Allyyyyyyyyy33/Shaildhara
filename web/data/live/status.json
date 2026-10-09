@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-08T07:33:17+00:00",
+  "generated_at": "2026-10-09T11:47:16+00:00",
   "sources": {
     "sachet": {
       "id": "sachet",
@@ -7,10 +7,10 @@
       "kind": "WARNING",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "34 current alert(s) from 12 feed(s)",
-      "records": 34,
-      "fetched_at": "2026-10-08T07:33:17+00:00",
-      "data_date": "2026-10-08T12:50:35+05:30",
+      "detail": "52 current alert(s) from 12 feed(s)",
+      "records": 52,
+      "fetched_at": "2026-10-09T11:47:16+00:00",
+      "data_date": "2026-10-09T17:11:39+05:30",
       "blockers": [],
       "feeds_ok": [
         "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
@@ -26,28 +26,7 @@
         "https://sachet.ndma.gov.in/cap_public_website/rss/rss_bihar.xml",
         "https://sachet.ndma.gov.in/cap_public_website/rss/rss_punjab.xml"
       ],
-      "feeds_failed": [
-        {
-          "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_himachal_pradesh.xml",
-          "http": 404
-        },
-        {
-          "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_jammu_and_kashmir.xml",
-          "http": 404
-        },
-        {
-          "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_arunachal_pradesh.xml",
-          "http": 404
-        },
-        {
-          "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_west_bengal.xml",
-          "http": 404
-        },
-        {
-          "feed": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_uttar_pradesh.xml",
-          "http": 404
-        }
-      ]
+      "feeds_failed": []
     },
     "nwdp_cwc": {
       "id": "nwdp_cwc",
@@ -55,10 +34,10 @@
       "kind": "OBSERVED",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "10838 station observation(s) from 70 recently updated dataset(s)",
-      "records": 10838,
-      "fetched_at": "2026-10-08T07:40:01+00:00",
-      "data_date": "2026-12-09T21:00:00+00:00",
+      "detail": "108 station observation(s) from 70 recently updated dataset(s)",
+      "records": 108,
+      "fetched_at": "2026-10-09T11:54:15+00:00",
+      "data_date": "2026-10-09T17:00:00+00:00",
       "blockers": []
     },
     "imd": {
@@ -69,7 +48,7 @@
       "status": "NEEDS_API_KEY",
       "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
       "records": 0,
-      "fetched_at": "2026-10-08T08:10:20+00:00",
+      "fetched_at": "2026-10-09T12:23:55+00:00",
       "data_date": null,
       "blockers": [
         "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -83,7 +62,7 @@
       "status": "DISABLED",
       "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
       "records": 0,
-      "fetched_at": "2026-10-08T08:10:20+00:00",
+      "fetched_at": "2026-10-09T12:23:55+00:00",
       "data_date": null,
       "blockers": []
     }

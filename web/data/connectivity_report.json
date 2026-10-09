@@ -1,0 +1,39 @@
+{
+  "started_at": "2026-10-09T11:43:28+00:00",
+  "status": "OK",
+  "blockers": [],
+  "stats": {
+    "osm_network": {
+      "ways": 187747,
+      "reaches": 261790,
+      "junction_nodes": 170334,
+      "forks_resolved_by_rule": 15888,
+      "reaches_without_downstream": 23917,
+      "reaches_in_cycles": 9,
+      "total_km": 559306.6,
+      "source_file": "india-latest.osm.pbf"
+    },
+    "river_source": "osm_waterways",
+    "reaches_total": 261790,
+    "reaches_terminal": 23917,
+    "reaches_leaving_selection": 0,
+    "districts_with_river_reaches": 724,
+    "districts_total": 733,
+    "distinct_anchor_start_reaches": 3368,
+    "path_end_reasons": {
+      "terminal": 3367,
+      "leaves_selection": 0,
+      "loop_or_limit": 1
+    },
+    "reaches_with_cwc_name": 9070,
+    "reaches_with_osm_name": 255,
+    "lake_links": {
+      "close_le_1km": 160,
+      "moderate_1_5km": 221,
+      "weak_5_10km": 24,
+      "unlinked": 117
+    },
+    "exported_reaches": 9469
+  },
+  "finished_at": "2026-10-09T11:44:50+00:00"
+}
