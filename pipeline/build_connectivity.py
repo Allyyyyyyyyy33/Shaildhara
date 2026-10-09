@@ -75,12 +75,24 @@ def run():
         return rep
     india = shapely.union_all(shapely.make_valid(states.geometry.values))
     minx, miny, maxx, maxy = states.total_bounds
+    method = "hydrorivers"
     reaches, note = load_hydrorivers(india, (minx - 0.1, miny - 0.1, maxx + 0.1, maxy + 0.1))
     if reaches is None:
-        rep.update(status="BLOCKED")
-        rep["blockers"].append(note + ". Downstream tracing is switched off until this layer exists.")
-        log("connectivity: BLOCKED - " + note)
-        return rep
+        # HydroSHEDS forbids automated download (robots.txt), so fall back to OpenStreetMap waterways (flow direction by OSM convention)
+        from .build_osm_network import load_osm_waterways
+        osm_reaches, osm_stats, osm_note = load_osm_waterways()
+        if osm_reaches is None:
+            rep.update(status="BLOCKED")
+            rep["blockers"].append(note + "; OpenStreetMap fallback: " + osm_note + ". Downstream tracing is switched off until a river layer exists.")
+            log("connectivity: BLOCKED - " + note + " | " + osm_note)
+            return rep
+        reaches, method = osm_reaches, "osm_waterways"
+        rep["stats"]["osm_network"] = osm_stats
+        note = osm_note + " [HydroRIVERS unavailable: " + note[:120] + "]"
+    rep["stats"]["river_source"] = method
+    for c in ("acc", "osm_name"):
+        if c not in reaches.columns:
+            reaches[c] = np.nan if c == "acc" else None
     log("connectivity: " + note)
 
     n = len(reaches)
@@ -121,7 +133,7 @@ def run():
     district_entry = {}
     if dists is not None:
         sidx = reaches.sindex
-        score = reaches["dis"].fillna(0).values + reaches["ord"].fillna(0).values * 1e-6
+        score = (reaches["dis"].fillna(0).values if method == "hydrorivers" else reaches["acc"].fillna(0).values) + reaches["ord"].fillna(0).values * 1e-6
         for _, d in dists.iterrows():
             hit = sidx.query(shapely.make_valid(d.geometry), predicate="intersects")
             if len(hit):
@@ -192,6 +204,19 @@ def run():
     else:
         rep["blockers"].append("CWC river layer missing: reaches stay unnamed")
 
+    if method == "osm_waterways":
+        lookup = {n: i for i, n in enumerate(name_list)}
+        added = 0
+        for i, nm in enumerate(sub["osm_name"].values):
+            if names_idx[i] < 0 and isinstance(nm, str) and nm.strip():
+                nm = nm.strip()
+                if nm not in lookup:
+                    lookup[nm] = len(name_list)
+                    name_list.append(nm)
+                names_idx[i] = lookup[nm]
+                added += 1
+        rep["stats"]["reaches_with_osm_name"] = added
+
     coords = []
     simp = sub.geometry.simplify(0.002, preserve_topology=False)
     for g in simp.values:
@@ -203,7 +228,17 @@ def run():
         coords.append([[round(x, 4), round(y, 4)] for x, y in line.coords])
     net = {
         "generated_at": utc_iso(),
-        "source": "HydroRIVERS v1.0 (HydroSHEDS) - dataset topology via NEXT_DOWN; modelled discharge",
+        "method": method,
+        "source": ("HydroRIVERS v1.0 (HydroSHEDS) - dataset topology via NEXT_DOWN; modelled discharge" if method == "hydrorivers" else
+                   "OpenStreetMap waterways (c) OpenStreetMap contributors, ODbL, via Geofabrik - downstream links computed from way direction"),
+        "source_label": ("HydroRIVERS (international dataset topology)" if method == "hydrorivers" else
+                         "OpenStreetMap waterways: links computed from the drawing direction of each waterway (OSM convention), not hydrologically modelled"),
+        "rank_label": "largest by modelled discharge" if method == "hydrorivers" else "most mapped reaches upstream (computed; no discharge available)",
+        "caveat": ("small streams are missing at this resolution" if method == "hydrorivers" else
+                   "mapping is volunteer-made and uneven in mountains; a waterway drawn backwards or a gap breaks the link"),
+        "terminal_text": ("reaches the end of the network (sea or inland sink)" if method == "hydrorivers" else
+                          "reaches the end of the MAPPED waterway (sea, inland sink, or a gap in the mapping)"),
+        "acc": [None if pd.isna(x) else int(x) for x in sub["acc"].values],
         "ids": [int(x) for x in sub["rid"].values],
         "next": [int(new_index.get(int(o), -1)) if o >= 0 else -1 for o in nxt[order]],
         "end": [int(x) for x in end_code[order]],

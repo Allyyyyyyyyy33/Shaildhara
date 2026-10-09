@@ -5,9 +5,9 @@ on:
   workflow_dispatch:
     inputs:
       heavy:
-        description: "Also try the large WorldPop and OpenStreetMap downloads (slow)"
+        description: "Include the large WorldPop and OpenStreetMap downloads (needed for the river graph and exposure)"
         type: boolean
-        default: false
+        default: true
 permissions:
   contents: write
 jobs:
@@ -30,14 +30,13 @@ jobs:
           else
             echo "no data-v1 release - nothing to stage"
           fi
-      - name: Optional OpenStreetMap tools
-        if: ${{ inputs.heavy }}
-        run: sudo apt-get update && sudo apt-get install -y osmium-tool && pip install osmium
+      - name: OpenStreetMap tools
+        run: sudo apt-get update && sudo apt-get install -y osmium-tool
       - name: Build
         env:
           IMD_API_KEY: ${{ secrets.IMD_API_KEY }}
           SHAILDHARA_CONTACT: ${{ vars.SHAILDHARA_CONTACT }}
-        run: python -m pipeline.build_all ${{ inputs.heavy && '--heavy' || '' }}
+        run: python -m pipeline.build_all ${{ (inputs.heavy || github.event_name == 'push') && '--heavy' || '' }}
       - name: Deploy check
         run: python -m pipeline.check_deploy || true
       - name: Commit the generated website data

@@ -8,20 +8,15 @@
     "state_slugs": [
       "india",
       "uttarakhand",
-      "himachal_pradesh",
       "sikkim",
-      "jammu_and_kashmir",
       "ladakh",
-      "arunachal_pradesh",
       "assam",
-      "west_bengal",
       "nagaland",
       "manipur",
       "mizoram",
       "meghalaya",
       "tripura",
       "bihar",
-      "uttar_pradesh",
       "punjab"
     ],
     "max_cap_files_per_run": 400
@@ -36,7 +31,8 @@
       "snowfall"
     ],
     "fresh_days": 14,
-    "max_rows_per_resource": 2000
+    "max_rows_per_resource": 2000,
+    "max_obs_age_days": 7
   },
   "imd": {
     "enabled": true,

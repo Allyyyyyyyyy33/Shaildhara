@@ -243,7 +243,23 @@ LAT = re.compile(r"^(lat|latitude|y_coord|lat_dd)$", re.I)
 LON = re.compile(r"^(lon|long|longitude|lng|x_coord|lon_dd)$", re.I)
 STN = re.compile(r"(station.*(name|id|code)|^station$|site.*name)", re.I)
 TIME = re.compile(r"(date|time|timestamp|observed)", re.I)
-VAL = re.compile(r"(water.?level|^level$|discharge|rainfall|^value$|stage|snow)", re.I)
+VAL = re.compile(r"(water.?level|^level$|discharge|rainfall|^value$|stage|snow)", re.I)   # kept for reference
+UNIT = re.compile(r"\(([^)]*)\)\s*$")
+SKIP_VAL = re.compile(r"^(is_|rl_|meansea|slno|area|velocity)|code$", re.I)
+
+
+def pick_fields(fields):
+    """Explicit rules for the NWDP telemetry schemas seen in practice (checked against the real portal on 2026-10-08).
+    The measurement is the column that carries a unit in brackets, e.g. 'River Water Level Telemetry Hourly (meter)';
+    flags such as Is_DischargeDataAvailable, RL_of_zeroGauge, MeanSeaLevel, Area, Velocity are never used as the value."""
+    lat = next((f for f in fields if LAT.match(f)), None)
+    lon = next((f for f in fields if LON.match(f)), None)
+    stn = (next((f for f in fields if re.fullmatch(r"station", f, re.I)), None) or next((f for f in fields if re.fullmatch(r"location name", f, re.I)), None)
+           or next((f for f in fields if STN.search(f)), None))
+    tm = (next((f for f in fields if re.fullmatch(r"data acquisition time|monitoring date", f, re.I)), None) or next((f for f in fields if TIME.search(f)), None))
+    cands = [f for f in fields if f not in (lat, lon, stn, tm) and not SKIP_VAL.search(f) and (UNIT.search(f) or re.fullmatch(r"water discharge", f, re.I))]
+    return lat, lon, stn, tm, (cands[-1] if cands else None)
+
 
 
 def nwdp(http, cfg, status):
@@ -294,11 +310,7 @@ def nwdp(http, cfg, status):
                     continue
                 d = json.loads(r["content"].decode("utf-8", "ignore"))["result"]
                 fields = [f["id"] for f in d.get("fields", []) if f["id"] != "_id"]
-                lat = next((f for f in fields if LAT.match(f)), None)
-                lon = next((f for f in fields if LON.match(f)), None)
-                stn = next((f for f in fields if STN.search(f)), None)
-                tm = next((f for f in fields if TIME.search(f)), None)
-                vl = next((f for f in fields if VAL.search(f)), None)
+                lat, lon, stn, tm, vl = pick_fields(fields)
                 recs = d.get("records", []) or []
                 res["schema"] = {"lat": lat, "lon": lon, "station": stn, "time": tm, "value": vl}
                 schemas.append({"dataset": ds["title"], "resource": res["id"], "fields": fields[:30], "schema": res["schema"],
@@ -311,7 +323,7 @@ def nwdp(http, cfg, status):
                     continue
                 if isinstance(d.get("total"), int) and d["total"] > len(recs):
                     # more rows exist than one page: ask for the newest rows first
-                    r2 = http.get(host + "/api/3/action/datastore_search", params={"resource_id": res["id"], "limit": limit, "sort": f"{tm} desc"}, max_bytes=15_000_000)
+                    r2 = http.get(host + "/api/3/action/datastore_search", params={"resource_id": res["id"], "limit": limit, "sort": f'"{tm}" desc'}, max_bytes=15_000_000)
                     if r2["ok"] and r2["status"] == 200:
                         recs = json.loads(r2["content"].decode("utf-8", "ignore"))["result"].get("records", []) or recs
                 df = pd.DataFrame(recs)
@@ -320,12 +332,19 @@ def nwdp(http, cfg, status):
                     res["schema_note"] = f"declared fields missing from records: {missing}"
                     continue
                 df["_t"] = pd.to_datetime(df[tm], errors="coerce", utc=True)
-                df = df.dropna(subset=["_t"]).sort_values("_t").groupby(stn).tail(1)
+                now_ts = pd.Timestamp(utc_now())
+                cut = now_ts - pd.Timedelta(days=nc.get("max_obs_age_days", 7))
+                df = df.dropna(subset=["_t"])
+                n_all = len(df)
+                df = df[(df["_t"] >= cut) & (df["_t"] <= now_ts + pd.Timedelta(days=1))]     # only recent readings; never a stale or future-dated one
+                res["rows_dropped_not_recent"] = n_all - len(df)
+                df = df.sort_values("_t").groupby(stn).tail(1)
+                um = UNIT.search(vl)
                 for _, row in df.iterrows():
                     try:
                         obs.append({"station": str(row[stn]), "lat": float(row[lat]), "lon": float(row[lon]), "parameter": vl,
                                     "value": float(row[vl]), "observed_at": row["_t"].isoformat(), "dataset": ds["title"], "dataset_id": ds["id"],
-                                    "kind": "OBSERVED"})
+                                    "unit": um.group(1) if um else None, "kind": "OBSERVED"})
                     except Exception:
                         continue
             except Exception as e:

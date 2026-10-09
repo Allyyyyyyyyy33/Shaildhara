@@ -21,7 +21,7 @@
 
   function makeGraph(net) {
     return {
-      n: net.ids.length, ids: net.ids, next: net.next, end: net.end, len: net.len_km, ord: net.ord, dis: net.dis_cms,
+      n: net.ids.length, ids: net.ids, next: net.next, end: net.end, len: net.len_km, ord: net.ord, dis: net.dis_cms, acc: net.acc || null,
       district: net.district, name: net.name, names: net.names || [], districts: net.districts || [], coords: net.coords,
     };
   }
@@ -117,7 +117,8 @@
   function entryReachesForDistricts(g, anchors, dids, cap) {
     const set = new Set();
     for (const d of dids || []) (anchors.districts[d] || []).forEach(r => set.add(r));
-    const arr = Array.from(set).sort((a, b) => (g.dis[b] || 0) - (g.dis[a] || 0));
+    const rank = r => (g.dis[r] || 0) || (g.acc ? (g.acc[r] || 0) : 0);
+    const arr = Array.from(set).sort((a, b) => rank(b) - rank(a));
     return arr.slice(0, cap == null ? 40 : cap);
   }
 

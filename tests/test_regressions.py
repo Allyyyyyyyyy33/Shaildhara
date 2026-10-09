@@ -95,13 +95,15 @@ today = datetime.now(timezone.utc).isoformat()
 search = json.dumps({"success": True, "result": {"results": [
     {"id": "d1", "name": "empty-rows", "title": "Declared but empty", "metadata_modified": today, "organization": {"title": "CWC"}, "resources": [{"id": "r1", "format": "CSV", "datastore_active": True}]},
     {"id": "d2", "name": "good", "title": "Good telemetry", "metadata_modified": today, "organization": {"title": "CWC"}, "resources": [{"id": "r2", "format": "CSV", "datastore_active": True}]}]}}).encode()
-fields = [{"id": "_id"}, {"id": "Station Name"}, {"id": "Latitude"}, {"id": "Longitude"}, {"id": "Data Acquisition Time"}, {"id": "Water Level"}]
+fields = [{"id": "_id"}, {"id": "Station"}, {"id": "Latitude"}, {"id": "Longitude"}, {"id": "Is_DischargeDataAvailable"}, {"id": "RL_of_zeroGauge"},
+          {"id": "Data Acquisition Time"}, {"id": "River Water Level Telemetry Hourly (meter)"}]
 
 
 def ds_route(url, params):
     if params["resource_id"] == "r1":
         return (200, json.dumps({"success": True, "result": {"fields": fields, "records": [], "total": 0}}).encode())
-    recs = [{"Station Name": "S1", "Latitude": 29.1, "Longitude": 78.1, "Data Acquisition Time": today, "Water Level": 101.5}]
+    recs = [{"Station": "S1", "Latitude": 29.1, "Longitude": 78.1, "Is_DischargeDataAvailable": 1, "RL_of_zeroGauge": 50.0, "Data Acquisition Time": today, "River Water Level Telemetry Hourly (meter)": 101.5},
+            {"Station": "S2", "Latitude": 29.2, "Longitude": 78.2, "Is_DischargeDataAvailable": 0, "RL_of_zeroGauge": 40.0, "Data Acquisition Time": "2000-01-01T01:50:00", "River Water Level Telemetry Hourly (meter)": 7.0}]
     return (200, json.dumps({"success": True, "result": {"fields": fields, "records": recs, "total": 1}}).encode())
 
 
@@ -110,7 +112,10 @@ cfg["nwdp"].update(host="https://nwdp.test", queries=["x"])
 status = {"sources": {}}
 fetch_live.nwdp(FakeHttp({"https://nwdp.test/api/3/action/package_search": (200, search), "https://nwdp.test/api/3/action/datastore_search": ds_route}), cfg, status)
 e = status["sources"]["nwdp_cwc"]
-check(e["status"] == "OK" and e["records"] == 1, f"NWDP: an empty datastore no longer crashes the stage; the good one is read ({e['status']})")
+check(e["status"] == "OK" and e["records"] == 1, f"NWDP: an empty datastore no longer crashes the stage; only the recent reading is kept ({e['status']}, {e['records']})")
+ob = json.load(open(WEB_LIVE / "river_observations.json"))["observations"]
+check(ob[0]["value"] == 101.5 and ob[0]["unit"] == "meter" and "Is_Discharge" not in ob[0]["parameter"], "NWDP: the value is the measurement column, never a flag such as Is_DischargeDataAvailable")
+check(all(o["station"] != "S2" for o in ob), "NWDP: a reading dated 2000-01-01 is not presented as current")
 cat = json.load(open(WEB_LIVE / "nwdp_catalogue.json"))
 check(len(cat["schemas_checked"]) == 2 and any(r.get("schema_note") for d in cat["datasets"] for r in d["resources"]), "NWDP: schemas checked are recorded for diagnosis")
 

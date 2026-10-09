@@ -183,8 +183,8 @@ os.environ.pop("IMD_API_KEY", None)
 today = now.isoformat()
 ckan_search = json.dumps({"success": True, "result": {"results": [{"id": "d1", "name": "tele-test", "title": "Telemetry test", "metadata_modified": today,
         "organization": {"title": "CWC"}, "resources": [{"id": "r1", "format": "CSV", "datastore_active": True}]}]}}).encode()
-ckan_rows = json.dumps({"success": True, "result": {"fields": [{"id": "_id"}, {"id": "Station_Name"}, {"id": "Latitude"}, {"id": "Longitude"}, {"id": "Obs_Time"}, {"id": "Water_Level"}],
-        "records": [{"Station_Name": "S1", "Latitude": 29.1, "Longitude": 78.1, "Obs_Time": today, "Water_Level": 101.5}]}}).encode()
+ckan_rows = json.dumps({"success": True, "result": {"fields": [{"id": "_id"}, {"id": "Station"}, {"id": "Latitude"}, {"id": "Longitude"}, {"id": "Data Acquisition Time"}, {"id": "River Water Level (meter)"}],
+        "records": [{"Station": "S1", "Latitude": 29.1, "Longitude": 78.1, "Data Acquisition Time": today, "River Water Level (meter)": 101.5}]}}).encode()
 fakec = FakeHttp({"https://nwdp.test/api/3/action/package_search": (200, ckan_search), "https://nwdp.test/api/3/action/datastore_search": (200, ckan_rows)})
 cfg["nwdp"]["host"] = "https://nwdp.test"; cfg["nwdp"]["queries"] = ["x"]
 status = {"sources": {}}

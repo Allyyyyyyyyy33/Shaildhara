@@ -251,7 +251,7 @@
     }
     if (D.conn && D.conn.stats) {
       const s = D.conn.stats;
-      h += `<h2>River connectivity</h2><div class="small">Reaches exported: ${esc(s.exported_reaches)}; lake links: ${esc(JSON.stringify(s.lake_links || {}))}; path ends: ${esc(JSON.stringify(s.path_end_reasons || {}))}. Downstream links come from HydroRIVERS (international dataset topology).</div>`;
+      h += `<h2>River connectivity</h2><div class="small">Reaches exported: ${esc(s.exported_reaches)}; lake links: ${esc(JSON.stringify(s.lake_links || {}))}; path ends: ${esc(JSON.stringify(s.path_end_reasons || {}))}. Downstream links come from ${esc((D.net && D.net.source_label) || 'HydroRIVERS (international dataset topology)')}.</div>`;
     }
     if (D.audit && D.audit.layers) {
       h += '<h2>Data audit</h2><table><tr><th>Layer</th><th>Features</th><th>Invalid</th><th>Dup IDs</th></tr>' +
@@ -379,8 +379,8 @@
       s3 = `<p>${pill('COMPUTED')} Nearest river reach in the network dataset: <strong>${q}</strong> (${esc(p.snap_km)} km).</p>
         <p class="small">The link is a nearest-reach match from map geometry. Rivers: ${sum.rivers.length ? esc(sum.rivers.slice(0, 4).join(', ')) : 'unnamed in the dataset'}.</p>`;
     } else {
-      s3 = `<p>${pill('COMPUTED')} ${starts.length} large river reach(es) intersect the district${sig.type === 'alert' ? 's covered by the alert' : ''} (largest by modelled discharge).</p>
-        <p class="small">Rivers: ${sum.rivers.length ? esc(sum.rivers.slice(0, 6).join(', ')) : 'unnamed in the dataset'}. Reaches come from HydroRIVERS; small streams are missing at this resolution.</p>`;
+      s3 = `<p>${pill('COMPUTED')} ${starts.length} large river reach(es) intersect the district${sig.type === 'alert' ? 's covered by the alert' : ''} (${esc((D.net && D.net.rank_label) || 'largest by modelled discharge')}).</p>
+        <p class="small">Rivers: ${sum.rivers.length ? esc(sum.rivers.slice(0, 6).join(', ')) : 'unnamed in the dataset'}. Reaches come from ${esc((D.net && D.net.method === 'osm_waterways') ? 'OpenStreetMap waterways' : 'HydroRIVERS')}; ${esc((D.net && D.net.caveat) || 'small streams are missing at this resolution')}.</p>`;
     }
     steps.push(stepHtml(3, 'Water / river / lake connection', s3));
 
@@ -389,7 +389,7 @@
     if (!traced) s4 = `<p>${pill('NODATA')} No pathway.</p>`;
     else {
       const reasons = traced.reasons;
-      const endText = reasons.terminal ? 'reaches the end of the network (sea or inland sink)' : '';
+      const endText = reasons.terminal ? ((D.net && D.net.terminal_text) || 'reaches the end of the network (sea or inland sink)') : '';
       const leave = reasons.leaves_selection ? 'leaves the part of the dataset that touches India (continues outside it; transboundary rivers are not followed)' : '';
       const hz = reasons.horizon ? `stopped at the ${maxKm} km display horizon` : '';
       s4 = `<p>${pill('COMPUTED')}${maxKm ? pill('SCENARIO', 'Scenario horizon ' + maxKm + ' km') : ''}</p>
