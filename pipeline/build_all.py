@@ -10,7 +10,8 @@ Each stage runs in isolation: a failure is recorded as a blocker and the next st
 import argparse
 import traceback
 
-from . import build_connectivity, build_exposure, build_foundation, fetch_live, fetch_static
+import importlib
+
 from .common import WEB_DATA, ensure_dirs, log, publish_sources, save_json, short, utc_iso
 
 STAGES = ["static", "foundation", "connectivity", "exposure", "live"]
@@ -33,12 +34,16 @@ def main(argv=None):
         report["stages"] = old.get("stages", {})
     except Exception:
         pass
+    def _mod(name):
+        # imported only when the stage runs, so a live-only refresh never loads the static-build modules
+        return importlib.import_module(f"{__package__}.{name}")
+
     runners = {
-        "static": lambda: fetch_static.run(heavy=a.heavy, force=a.force),
-        "foundation": build_foundation.run,
-        "connectivity": build_connectivity.run,
-        "exposure": build_exposure.run,
-        "live": fetch_live.run,
+        "static": lambda: _mod("fetch_static").run(heavy=a.heavy, force=a.force),
+        "foundation": lambda: _mod("build_foundation").run(),
+        "connectivity": lambda: _mod("build_connectivity").run(),
+        "exposure": lambda: _mod("build_exposure").run(),
+        "live": lambda: _mod("fetch_live").run(),
     }
     for st in STAGES:
         if st not in chosen:

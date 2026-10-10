@@ -190,8 +190,8 @@ def run():
                 jn = jn.sort_values("dm").drop_duplicates("ri", keep="first")
                 lookup = {}
                 for _, r in jn.iterrows():
-                    if pd.notna(r.get(nf)) and str(r[nf]).strip():
-                        nm = str(r[nf]).strip()
+                    if pd.notna(r.get(nf)) and str(r[nf]).strip() and not str(r[nf]).strip().replace(".", "", 1).isdigit():
+                        nm = str(r[nf]).strip()          # purely numeric values are codes, not river names
                         if nm not in lookup:
                             lookup[nm] = len(name_list)
                             name_list.append(nm)

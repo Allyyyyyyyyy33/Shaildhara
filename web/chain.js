@@ -79,7 +79,7 @@
         if (sk && !sSeen.has(sk)) { sSeen.add(sk); sOrder.push(sk); }
       } else unmapped++;
       const ni = g.name[r];
-      if (ni >= 0 && g.names[ni] && !rSeen.has(g.names[ni])) { rSeen.add(g.names[ni]); rivers.push(g.names[ni]); }
+      if (ni >= 0 && g.names[ni] && !/^\d+(\.\d+)?$/.test(String(g.names[ni]).trim()) && !rSeen.has(g.names[ni])) { rSeen.add(g.names[ni]); rivers.push(g.names[ni]); }   // numeric values are codes, not names
     });
     return { districts: dOrder, states: sOrder, rivers, unmappedReaches: unmapped, reaches: traced.idx.length, km: traced.totalKm };
   }
@@ -108,6 +108,15 @@
     const t = Date.parse(iso);
     if (isNaN(t)) return 'UNKNOWN';
     return (Date.now() - t) / 3.6e6 <= maxHours ? 'CURRENT' : 'STALE';
+  }
+
+  // An alert is current only while its own expiry time has not passed (or, with no expiry, for 48 h after it was sent).
+  function alertActive(a, nowMs) {
+    const now = nowMs == null ? Date.now() : nowMs;
+    const exp = Date.parse(a && a.expires);
+    if (a && a.expires && !isNaN(exp)) return exp >= now;
+    const sent = Date.parse(a && a.sent);
+    return !isNaN(sent) && (now - sent) / 3.6e6 <= 48;
   }
 
   const SEV = { extreme: 4, severe: 3, moderate: 2, minor: 1 };
@@ -148,5 +157,5 @@
     return out;
   }
 
-  return { LABELS, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
+  return { LABELS, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
 });

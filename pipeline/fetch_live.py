@@ -7,8 +7,10 @@ Each source gets: status, fetched_at, data_date, record count, evidence label an
 web/data/live/status.json, plus a provenance record.
 """
 import json
+import math
 import os
 import re
+import time
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -180,6 +182,8 @@ def sachet(http, cfg, dists, status):
     save_json(CACHE / "sachet_etags.json", etags)
     # fetch each CAP file once (cached by link)
     fetched = 0
+    cap_deadline = time.monotonic() + sc.get("budget_seconds", 420)
+    cap_skipped = 0
     now = utc_now()
     alerts = []
     seen_ids = set()
@@ -188,6 +192,9 @@ def sachet(http, cfg, dists, status):
         if not link or urlparse(link).netloc != urlparse(base).netloc:
             continue
         cap = cap_cache.get(link)
+        if cap is None and time.monotonic() > cap_deadline:
+            cap_skipped += 1
+            continue
         if cap is None and fetched < sc.get("max_cap_files_per_run", 400):
             r = http.get(link, max_bytes=2_000_000)
             fetched += 1
@@ -217,6 +224,8 @@ def sachet(http, cfg, dists, status):
             "description": (cap.get("description") or "")[:600], "instruction": (cap.get("instruction") or "")[:400],
             "areas": cap.get("areas", [])[:12], "districts": ids[:60], "match_method": method, "feed": it.get("_feed"), "cap_url": link,
             "kind": "WARNING", "issued_by_official_agency": True})
+    if cap_skipped:
+        entry["blockers"].append(f"SACHET time budget reached: {cap_skipped} CAP file(s) not fetched this run; they are retried next run (some current alerts may be missing until then)")
     # prune cache so it does not grow forever
     keep = {it.get("link") for it in items_all}
     save_json(CACHE / "sachet_cap_cache.json", {k: v for k, v in cap_cache.items() if k in keep})
@@ -246,6 +255,15 @@ TIME = re.compile(r"(date|time|timestamp|observed)", re.I)
 VAL = re.compile(r"(water.?level|^level$|discharge|rainfall|^value$|stage|snow)", re.I)   # kept for reference
 UNIT = re.compile(r"\(([^)]*)\)\s*$")
 SKIP_VAL = re.compile(r"^(is_|rl_|meansea|slno|area|velocity)|code$", re.I)
+
+
+def valid_obs(o):
+    """A station reading is usable only with finite coordinates inside India's bounding box and a finite value (NaN is not a reading)."""
+    try:
+        lat, lon, v = float(o["lat"]), float(o["lon"]), float(o["value"])
+    except (TypeError, ValueError, KeyError):
+        return False
+    return all(map(math.isfinite, (lat, lon, v))) and 6 <= lat <= 38 and 67 <= lon <= 98.5
 
 
 def pick_fields(fields):
@@ -296,12 +314,25 @@ def nwdp(http, cfg, status):
                 "resources": [{"id": x.get("id"), "format": x.get("format"), "datastore": bool(x.get("datastore_active"))} for x in ds.get("resources", [])]}
     # try latest rows of fresh datastore-enabled resources (each resource isolated: one bad schema never stops the rest)
     schemas = []
-    for ds in list(catalogue.values()):
-        if not ds["fresh"]:
-            continue
-        for res in ds["resources"]:
-            if not res["datastore"]:
+    prev = read_json(WEB_LIVE / "river_observations.json", {}) or {}
+    prev_obs = prev.get("observations", []) if isinstance(prev, dict) else []
+    productive = {o.get("dataset_id") for o in prev_obs}
+    work = [(ds, res) for ds in catalogue.values() if ds["fresh"] for res in ds["resources"] if res["datastore"]]
+    first = [w for w in work if w[0]["id"] in productive]            # datasets that gave station readings last time come first
+    rest = sorted((w for w in work if w[0]["id"] not in productive), key=lambda w: w[1]["id"] or "")
+    if rest:                                                          # rotate the rest so every dataset is re-checked over a few runs
+        k = int(utc_now().timestamp() // 10800) * 40 % len(rest)
+        rest = rest[k:] + rest[:k]
+    deadline = time.monotonic() + nc.get("budget_seconds", 600)
+    not_reached = 0
+    refreshed = set()
+    for ds, res in first + rest:
+        if True:
+            if time.monotonic() > deadline:
+                not_reached += 1
+                res["schema_note"] = "not checked this run (time budget); earlier readings reused if still recent"
                 continue
+            refreshed.add(ds["id"])
             try:
                 limit = nc.get("max_rows_per_resource", 2000)
                 r = http.get(host + "/api/3/action/datastore_search", params={"resource_id": res["id"], "limit": limit}, max_bytes=15_000_000)
@@ -340,16 +371,35 @@ def nwdp(http, cfg, status):
                 res["rows_dropped_not_recent"] = n_all - len(df)
                 df = df.sort_values("_t").groupby(stn).tail(1)
                 um = UNIT.search(vl)
+                n_invalid = 0
                 for _, row in df.iterrows():
                     try:
-                        obs.append({"station": str(row[stn]), "lat": float(row[lat]), "lon": float(row[lon]), "parameter": vl,
-                                    "value": float(row[vl]), "observed_at": row["_t"].isoformat(), "dataset": ds["title"], "dataset_id": ds["id"],
-                                    "unit": um.group(1) if um else None, "kind": "OBSERVED"})
+                        o = {"station": str(row[stn]), "lat": float(row[lat]), "lon": float(row[lon]), "parameter": vl,
+                             "value": float(row[vl]), "observed_at": row["_t"].isoformat(), "dataset": ds["title"], "dataset_id": ds["id"],
+                             "unit": um.group(1) if um else None, "kind": "OBSERVED"}
                     except Exception:
+                        n_invalid += 1
                         continue
+                    if valid_obs(o):
+                        obs.append(o)
+                    else:
+                        n_invalid += 1                      # NaN / missing coordinates or value: not a reading, never plotted
+                res["rows_dropped_invalid"] = n_invalid
             except Exception as e:
                 res["schema_note"] = "failed: " + short(e, 160)
                 entry["blockers"].append(f"{ds.get('title')}: {short(e, 160)}")
+    if not_reached:
+        # reuse earlier readings only for datasets not re-read this run, and only while they are still inside the recency window
+        have = {(o["dataset_id"], o["station"], o["parameter"]) for o in obs}
+        cutoff = utc_now() - timedelta(days=nc.get("max_obs_age_days", 7))
+        kept = 0
+        for o in prev_obs:
+            t = parse_dt(o.get("observed_at"))
+            if not valid_obs(o) or o.get("dataset_id") in refreshed or not t or t < cutoff or (o.get("dataset_id"), o.get("station"), o.get("parameter")) in have:
+                continue
+            obs.append(o)
+            kept += 1
+        entry["blockers"].append(f"NWDP time budget reached: {not_reached} dataset resource(s) not re-read this run; {kept} earlier reading(s) kept with their original observation times")
     dates = [pd.Timestamp(o["observed_at"]) for o in obs]
     entry.update(records=len(obs), data_date=(max(dates).isoformat() if dates else None))
     n_fresh = sum(1 for c in catalogue.values() if c["fresh"])

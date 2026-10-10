@@ -135,4 +135,33 @@ for n in ("HydroRIVERS_v10_as_shp.zip", "ind_ppp_2020_1km_Aggregated.tif", "ecos
 moved = stage_release_files.main(src, TMP / "manual_out")
 check(sorted(moved) == ["ecosystems", "hydrorivers_asia", "worldpop_india"] and (TMP / "manual_out" / "hydrorivers_asia" / "HydroRIVERS_v10_as_shp.zip").exists()
       and (src / "mystery.bin").exists(), "release files are routed by name; unknown files are left alone")
+
+# 14. live refresh stays inside its time budget and never re-reads everything (the 30-minute overrun)
+from datetime import datetime, timedelta, timezone
+from pipeline import build_all
+check(not hasattr(build_all, "build_exposure") and not hasattr(build_all, "fetch_static"), "build_all does not import the static-build stages at load time")
+_now = datetime.now(timezone.utc)
+_res = [{"id": f"r{i:03d}", "format": "CSV", "datastore_active": True} for i in range(60)]
+_search = json.dumps({"success": True, "result": {"results": [{"id": "dBIG", "name": "big", "title": "Big", "metadata_modified": _now.isoformat(),
+                      "organization": {"title": "CWC"}, "resources": _res}]}}).encode()
+_calls = {"n": 0}
+class _Counting:
+    def get(self, url, params=None, **kw):
+        if "package_search" in url:
+            return {"ok": True, "skipped": False, "unreachable": False, "status": 200, "headers": {}, "content": _search, "error": "", "truncated": False}
+        _calls["n"] += 1
+        return {"ok": True, "skipped": False, "unreachable": False, "status": 500, "headers": {}, "content": b"", "error": "", "truncated": False}
+json.dump({"observations": [
+    {"station": "S1", "lat": 29.1, "lon": 78.1, "parameter": "Level (meter)", "value": 1.0, "observed_at": (_now - timedelta(days=1)).isoformat(), "dataset": "Big", "dataset_id": "dBIG", "unit": "meter", "kind": "OBSERVED"},
+    {"station": "S2", "lat": 29.2, "lon": 78.2, "parameter": "Level (meter)", "value": 2.0, "observed_at": (_now - timedelta(days=30)).isoformat(), "dataset": "Big", "dataset_id": "dBIG", "unit": "meter", "kind": "OBSERVED"}]},
+    open(WEB_LIVE / "river_observations.json", "w"))
+_cfg = json.load(open(PROJECT / "config" / "live_sources.json"))
+_cfg["nwdp"].update(host="https://nwdp.budget.test", queries=["q"], budget_seconds=0)
+_st = {"sources": {}}
+fetch_live.nwdp(_Counting(), _cfg, _st)
+_obs = json.load(open(WEB_LIVE / "river_observations.json"))["observations"]
+check(_calls["n"] == 0, "NWDP with an exhausted time budget makes no further per-resource requests")
+check([o["station"] for o in _obs] == ["S1"], "earlier reading kept only while recent; 30-day-old reading dropped")
+check(any("time budget" in b for b in _st["sources"]["nwdp_cwc"]["blockers"]), "budget cut-off is reported openly in the source status")
+check(_obs[0]["observed_at"] == (_now - timedelta(days=1)).isoformat(), "carried-over reading keeps its original observation time")
 print(f"ALL REGRESSION TESTS PASSED ({ok})")

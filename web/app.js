@@ -46,6 +46,16 @@
     };
     await Promise.all(Object.entries(paths).map(async ([k, p]) => { D[k] = await getJSON(p); }));
     G = D.net && D.net.ids ? C.makeGraph(D.net) : null;
+    // A reading without finite coordinates and value cannot be plotted (NaN arrives as null): drop it instead of crashing the map.
+    if (D.obs && Array.isArray(D.obs.observations)) {
+      D.obs.observations = D.obs.observations.filter(o => o && Number.isFinite(o.lat) && Number.isFinite(o.lon) && Number.isFinite(o.value));
+    }
+    // Never show an alert as current after its own expiry time, even if the scheduled refresh is late.
+    if (D.alerts && Array.isArray(D.alerts.alerts)) {
+      const all = D.alerts.alerts;
+      D.alerts.alerts = all.filter(a => C.alertActive(a));
+      D.alerts.expired_since_refresh = all.length - D.alerts.alerts.length;
+    }
   }
 
   // ---------------------------------------------------------------- derived data
@@ -102,7 +112,7 @@
       obsLayer = L.layerGroup();
       D.obs.observations.forEach(o => {
         L.circleMarker([o.lat, o.lon], { radius: 5, color: '#1b5e20', fillColor: '#66bb6a', fillOpacity: .9, weight: 1 })
-          .bindTooltip(`${esc(o.station)}: ${esc(o.parameter)} ${esc(o.value)} (${esc(fmt(o.observed_at))})`).addTo(obsLayer);
+          .bindTooltip(`${esc(o.station)}: ${esc(o.parameter)} ${esc(o.value)} (${esc(fmt(o.observed_at))}) - as reported by the source, not quality-checked by SHAILDHARA`).addTo(obsLayer);
       });
       obsLayer.addTo(map);
       layers.obs = obsLayer;
@@ -132,7 +142,7 @@
     const bits = [];
     if (D.build) bits.push('Data built: ' + fmt(D.build.generated_at));
     const al = D.live && D.live.sources && D.live.sources.sachet;
-    bits.push('Alerts: ' + (al ? esc(al.status) + (al.records ? ' (' + al.records + ')' : '') : 'not loaded'));
+    bits.push(D.alerts ? 'Alerts: ' + alertList().length + ' current (feed refreshed ' + fmt(D.alerts.generated_at) + ')' : 'Alerts: ' + (al ? esc(al.status) : 'not loaded'));
     $('#top-status').innerHTML = bits.join(' &nbsp;|&nbsp; ');
     $('#legend').innerHTML = ['OFFICIAL', 'CURRENT', 'LATEST', 'COMPUTED', 'SCENARIO', 'NODATA'].map(k => pill(k)).join('');
   }
@@ -144,7 +154,7 @@
     const can = entry.length > 0;
     const why = !a.districts.length ? 'No district could be matched to this alert, so no river connection can be computed.'
       : !G ? 'River network not built yet (see Sources).' : (!can ? 'No river reaches found in the alerted districts.' : '');
-    const status = C.freshness(a.sent, 48);
+    const status = C.alertActive(a) ? 'CURRENT' : 'STALE';
     return `<div class="card" data-alert="${i}">
       <h3>${esc(a.event || a.headline || 'Alert')}</h3>
       <div>${pill('OFFICIAL')}${status === 'CURRENT' || !a.expires ? pill('CURRENT') : ''}<span class="pill sev sev-${sev}">${esc(a.severity || 'severity not given')}</span></div>
@@ -177,8 +187,9 @@
     const al = alertList();
     let h = '<h2>Current official alerts</h2>';
     if (!D.alerts) h += `<div class="card">${pill('NODATA')}<div class="small">No alert file found. Run the live stage of the pipeline.</div></div>`;
-    else if (!al.length) h += `<div class="card">${pill('NODATA')}<div class="small">No unexpired alerts in the feeds read at ${fmt(D.alerts.generated_at)}. This can be genuinely quiet, or the feeds may not be reachable: see the status cards below.</div></div>`;
+    else if (!al.length) h += `<div class="card">${pill('NODATA')}<div class="small">No unexpired alerts in the feeds read at ${fmt(D.alerts.generated_at)}${D.alerts.expired_since_refresh ? ' (' + D.alerts.expired_since_refresh + ' alert(s) in that file have since expired and are hidden)' : ''}. This can be genuinely quiet, or the feeds may not be reachable: see the status cards below.</div></div>`;
     else {
+      if (D.alerts.expired_since_refresh) h += `<div class="small">${D.alerts.expired_since_refresh} alert(s) from the ${fmt(D.alerts.generated_at)} refresh have expired and are hidden.</div>`;
       const order = al.map((a, i) => i).sort((x, y) => C.severityRank(al[y].severity) - C.severityRank(al[x].severity));
       h += order.slice(0, 80).map(i => alertCard(al[i], i)).join('');
       if (order.length > 80) h += `<div class="small">Showing the 80 highest-severity alerts of ${order.length}.</div>`;
@@ -510,13 +521,23 @@
     $('#q').addEventListener('input', e => runSearch(e.target.value));
   }
 
+  // One broken part must never blank the whole site: each startup step is isolated and a failure is shown, not hidden.
+  const failedParts = [];
+  function safely(name, fn) {
+    try { fn(); } catch (e) { console.error('SHAILDHARA startup step failed:', name, e); failedParts.push(name); }
+  }
+
   async function main() {
     initMap();
     await loadAll();
-    indexAlerts();
-    buildLayers();
-    renderTop(); renderSignals(); renderLayersTab(); renderSourcesTab();
-    wire();
+    safely('alerts', indexAlerts);
+    safely('map layers', buildLayers);
+    safely('status bar', renderTop); safely('signals panel', renderSignals); safely('layers panel', renderLayersTab); safely('sources panel', renderSourcesTab);
+    safely('controls', wire);
+    if (failedParts.length) {
+      const b = $('#banner'); b.hidden = false; b.className = 'banner';
+      b.innerHTML += ' Part of this page could not load (' + esc(failedParts.join(', ')) + '). The rest still works; see the browser console for details.';
+    }
     window.SHAILDHARA = { D, selectDistrict, selectLake, selectAlert, state: () => ({ current, G }) };   // handy for testing
   }
   main();

@@ -165,8 +165,8 @@
           "kind": "OBSERVED",
           "evidence": "OFFICIAL",
           "status": "OK",
-          "detail": "108 station observation(s) from 70 recently updated dataset(s)",
-          "records": 108,
+          "detail": "100 station observation(s) from 70 recently updated dataset(s)",
+          "records": 100,
           "fetched_at": "2026-10-09T11:54:15+00:00",
           "data_date": "2026-10-09T17:00:00+00:00",
           "blockers": []
