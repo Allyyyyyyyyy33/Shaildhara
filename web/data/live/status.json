@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-11T05:40:51+00:00",
+  "generated_at": "2026-10-11T12:43:31+00:00",
   "sources": {
     "sachet": {
       "id": "sachet",
@@ -7,10 +7,10 @@
       "kind": "WARNING",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "33 current alert(s) from 12 feed(s)",
-      "records": 33,
-      "fetched_at": "2026-10-11T05:40:51+00:00",
-      "data_date": "2026-10-11T10:26:17+05:30",
+      "detail": "50 current alert(s) from 12 feed(s)",
+      "records": 50,
+      "fetched_at": "2026-10-11T12:43:32+00:00",
+      "data_date": "2026-10-11T18:06:25+05:30",
       "blockers": [],
       "feeds_ok": [
         "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
@@ -34,12 +34,12 @@
       "kind": "OBSERVED",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "76 station observation(s) from 70 recently updated dataset(s)",
-      "records": 76,
-      "fetched_at": "2026-10-11T05:42:04+00:00",
-      "data_date": "2026-10-10T09:00:00+00:00",
+      "detail": "70 station observation(s) from 70 recently updated dataset(s)",
+      "records": 70,
+      "fetched_at": "2026-10-11T12:46:08+00:00",
+      "data_date": "2026-10-09T17:00:00+00:00",
       "blockers": [
-        "NWDP time budget reached: 320 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times"
+        "NWDP time budget reached: 320 dataset resource(s) not re-read this run; 1 earlier reading(s) kept with their original observation times"
       ]
     },
     "imd": {
@@ -50,7 +50,7 @@
       "status": "NEEDS_API_KEY",
       "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
       "records": 0,
-      "fetched_at": "2026-10-11T05:52:19+00:00",
+      "fetched_at": "2026-10-11T12:56:24+00:00",
       "data_date": null,
       "blockers": [
         "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -64,7 +64,7 @@
       "status": "DISABLED",
       "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
       "records": 0,
-      "fetched_at": "2026-10-11T05:52:19+00:00",
+      "fetched_at": "2026-10-11T12:56:24+00:00",
       "data_date": null,
       "blockers": []
     }
