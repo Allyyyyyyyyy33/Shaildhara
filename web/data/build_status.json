@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-10T21:38:34+00:00",
+  "generated_at": "2026-10-11T02:30:43+00:00",
   "stages": {
     "static": {
       "started_at": "2026-10-09T11:39:49+00:00",
@@ -130,7 +130,7 @@
       "finished_at": "2026-10-09T11:47:16+00:00"
     },
     "live": {
-      "generated_at": "2026-10-10T21:38:35+00:00",
+      "generated_at": "2026-10-11T02:30:43+00:00",
       "sources": {
         "sachet": {
           "id": "sachet",
@@ -138,10 +138,10 @@
           "kind": "WARNING",
           "evidence": "OFFICIAL",
           "status": "OK",
-          "detail": "25 current alert(s) from 12 feed(s)",
-          "records": 25,
-          "fetched_at": "2026-10-10T21:38:35+00:00",
-          "data_date": "2026-10-11T01:13:02+05:30",
+          "detail": "20 current alert(s) from 12 feed(s)",
+          "records": 20,
+          "fetched_at": "2026-10-11T02:30:44+00:00",
+          "data_date": "2026-10-11T07:47:20+05:30",
           "blockers": [],
           "feeds_ok": [
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
@@ -165,12 +165,12 @@
           "kind": "OBSERVED",
           "evidence": "OFFICIAL",
           "status": "OK",
-          "detail": "80 station observation(s) from 70 recently updated dataset(s)",
-          "records": 80,
-          "fetched_at": "2026-10-10T21:39:05+00:00",
+          "detail": "79 station observation(s) from 70 recently updated dataset(s)",
+          "records": 79,
+          "fetched_at": "2026-10-11T02:32:08+00:00",
           "data_date": "2026-10-09T17:00:00+00:00",
           "blockers": [
-            "NWDP time budget reached: 317 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times"
+            "NWDP time budget reached: 321 dataset resource(s) not re-read this run; 1 earlier reading(s) kept with their original observation times"
           ]
         },
         "imd": {
@@ -181,7 +181,7 @@
           "status": "NEEDS_API_KEY",
           "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
           "records": 0,
-          "fetched_at": "2026-10-10T21:49:18+00:00",
+          "fetched_at": "2026-10-11T02:42:23+00:00",
           "data_date": null,
           "blockers": [
             "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -195,7 +195,7 @@
           "status": "DISABLED",
           "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
           "records": 0,
-          "fetched_at": "2026-10-10T21:49:18+00:00",
+          "fetched_at": "2026-10-11T02:42:23+00:00",
           "data_date": null,
           "blockers": []
         }
@@ -209,7 +209,7 @@
     "Static data 'ecosystems': No verified programmatic URL. Place file(s) in data/manual/ecosystems/ (No verified programmatic download. Place vector files in data/manual/ecosystems/; exposure is computed only for files present.)",
     "exposure layer 'land_cover': Land-cover tiles not loaded (place ESA WorldCover or NRSC GeoTIFF tiles in data/manual/landcover/)",
     "exposure layer 'ecosystems': No ecosystem polygon files provided (data/manual/ecosystems/)",
-    "Live source 'nwdp_cwc': NWDP time budget reached: 317 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times",
+    "Live source 'nwdp_cwc': NWDP time budget reached: 321 dataset resource(s) not re-read this run; 1 earlier reading(s) kept with their original observation times",
     "Live source 'imd': IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
     "Live source 'imd': IMD API key required (and possibly IP whitelisting by IMD)"
   ],
