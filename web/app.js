@@ -8,6 +8,9 @@
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : '');
+  const MATCH_LABEL = { POLYGON: 'by alert polygon', NAME_MATCH: 'by area name, lower confidence',
+    FUZZY_NAME_MATCH: 'by approximate spelling of the district name within the alert\'s state, lower confidence - please check',
+    TEXT_NAME_MATCH: 'by district names found in the alert text within its state, lower confidence - please check' };
   const SEV_COLOR = { 4: '#b71c1c', 3: '#e65100', 2: '#f9a825', 1: '#fdd835' };
   const D = {};                 // loaded data
   let G = null;                 // river graph
@@ -42,9 +45,14 @@
       states: 'data/states.geojson', districts: 'data/districts.geojson', lakes: 'data/glacial_lakes.geojson', net: 'data/network/reaches.json',
       anchors: 'data/anchors.json', expo: 'data/exposure/reach_exposure.json', search: 'data/search_index.json', sources: 'data/sources.json',
       build: 'data/build_status.json', audit: 'data/audit.json', conn: 'data/connectivity_report.json', alerts: 'data/live/alerts.json',
-      live: 'data/live/status.json', obs: 'data/live/river_observations.json', nwdpcat: 'data/live/nwdp_catalogue.json',
+      live: 'data/live/status.json', coverage: 'data/coverage.json', obs: 'data/live/river_observations.json', nwdpcat: 'data/live/nwdp_catalogue.json',
     };
     await Promise.all(Object.entries(paths).map(async ([k, p]) => { D[k] = await getJSON(p); }));
+    // Shape guards: a file that parses but has the wrong shape is treated as absent, never allowed to break a panel.
+    ['states', 'districts', 'lakes'].forEach(k => { if (D[k] && !Array.isArray(D[k].features)) D[k] = null; });
+    if (D.alerts && (typeof D.alerts !== 'object' || !Array.isArray(D.alerts.alerts))) D.alerts = D.alerts && typeof D.alerts === 'object' ? Object.assign(D.alerts, { alerts: [], malformed: true }) : null;
+    if (D.obs && !Array.isArray(D.obs.observations)) D.obs = null;
+    if (D.live && typeof D.live !== 'object') D.live = null;
     G = D.net && D.net.ids ? C.makeGraph(D.net) : null;
     // A reading without finite coordinates and value cannot be plotted (NaN arrives as null): drop it instead of crashing the map.
     if (D.obs && Array.isArray(D.obs.observations)) {
@@ -76,6 +84,18 @@
     chainGroup = L.layerGroup().addTo(map);
     layers.base = base;
     map.attributionControl.addAttribution('SHAILDHARA: data from the sources listed under "Sources"');
+    const key = L.control({ position: 'bottomleft' });
+    key.onAdd = () => {
+      const d = L.DomUtil.create('details', 'mapkey'); d.open = window.matchMedia('(min-width: 901px)').matches;
+      d.innerHTML = '<summary>Map key</summary>' +
+        '<div><i class="sw" style="background:#4fc3f7;border:1px solid #0a3d62;border-radius:50%"></i>Glacial lake (CWC inventory, static)</div>' +
+        '<div><i class="sw" style="background:#66bb6a;border:1px solid #1b5e20;border-radius:50%"></i>Station reading (CWC/NWDP, source-reported)</div>' +
+        '<div><i class="sw" style="background:#e65100;opacity:.6"></i>District with an unexpired official alert</div>' +
+        '<div><i class="sw ln" style="background:#ff6f00"></i>Chain start (alert districts / lake)</div>' +
+        '<div><i class="sw ln" style="background:#0b6fa4"></i>Connected downstream reaches (computed, not a forecast)</div>';
+      L.DomEvent.disableClickPropagation(d); return d;
+    };
+    key.addTo(map);
   }
 
   function buildLayers() {
@@ -111,8 +131,9 @@
     if (D.obs && D.obs.observations && D.obs.observations.length) {
       obsLayer = L.layerGroup();
       D.obs.observations.forEach(o => {
-        L.circleMarker([o.lat, o.lon], { radius: 5, color: '#1b5e20', fillColor: '#66bb6a', fillOpacity: .9, weight: 1 })
-          .bindTooltip(`${esc(o.station)}: ${esc(o.parameter)} ${esc(o.value)} (${esc(fmt(o.observed_at))}) - as reported by the source, not quality-checked by SHAILDHARA`).addTo(obsLayer);
+        const flag = C.obsFlag(o);
+        L.circleMarker([o.lat, o.lon], { radius: 5, color: flag ? '#b71c1c' : '#1b5e20', fillColor: '#66bb6a', fillOpacity: flag ? .15 : .9, weight: flag ? 2 : 1, dashArray: flag ? '3 2' : null })
+          .bindTooltip(`${esc(o.station)}: ${esc(o.parameter)} ${esc(o.value)} (${esc(fmt(o.observed_at))}) - as reported by the source, not quality-checked by SHAILDHARA` + (flag ? ` <b>WARNING: ${esc(flag)}.</b>` : '')).addTo(obsLayer);
       });
       obsLayer.addTo(map);
       layers.obs = obsLayer;
@@ -160,7 +181,8 @@
       <div>${pill('OFFICIAL')}${status === 'CURRENT' || !a.expires ? pill('CURRENT') : ''}<span class="pill sev sev-${sev}">${esc(a.severity || 'severity not given')}</span></div>
       <div class="meta">${esc(a.sender || 'sender not given')} &middot; issued ${fmt(a.sent)}${a.expires ? ' &middot; expires ' + fmt(a.expires) : ''}</div>
       <div class="meta">${esc((a.areas || []).slice(0, 3).join('; '))}${(a.areas || []).length > 3 ? ' ...' : ''}</div>
-      <div class="meta">Districts matched: ${a.districts.length} (${a.match_method === 'POLYGON' ? 'by alert polygon' : (a.match_method === 'NAME_MATCH' ? 'by area name, lower confidence' : esc(a.match_method))})</div>
+      ${C.nonEnglish(a.description || a.headline) ? '<div class="meta">Text is shown exactly as issued, in the agency\'s language (not translated).</div>' : ''}
+      <div class="meta">Districts matched: ${a.districts.length}${a.districts_stated ? ' of ' + a.districts_stated + ' stated' : ''} (${esc(MATCH_LABEL[a.match_method] || a.match_method)})</div>
       <button class="chain-btn" data-chain-alert="${i}" ${can ? '' : 'disabled'}>SHOW ME THE CHAIN</button>
       ${why ? `<div class="reason">${esc(why)}</div>` : ''}
       ${prov({ source: 'NDMA SACHET (' + (a.sender || 'issuing agency') + ')', kind: 'WARNING (official, as issued)', dataDate: a.sent, fetchedAt: D.alerts.generated_at, status: 'CURRENT' })}
@@ -186,6 +208,10 @@
     const el = $('#tab-signals');
     const al = alertList();
     let h = '<h2>Current official alerts</h2>';
+    const ss = D.live && D.live.sources && D.live.sources.sachet;
+    if (D.alerts && ss && (ss.status === 'BLOCKED' || ss.status === 'ERROR')) {
+      h += `<div class="card">${pill('LATEST')}<div class="small"><b>The official alert feed could not be read in the latest refresh.</b> Alerts shown are from the last successful read (${esc(fmt(D.alerts.generated_at))}) and may have been updated or cancelled since. Check sachet.ndma.gov.in for the live position.</div></div>`;
+    }
     if (!D.alerts) h += `<div class="card">${pill('NODATA')}<div class="small">No alert file found. Run the live stage of the pipeline.</div></div>`;
     else if (!al.length) h += `<div class="card">${pill('NODATA')}<div class="small">No unexpired alerts in the feeds read at ${fmt(D.alerts.generated_at)}${D.alerts.expired_since_refresh ? ' (' + D.alerts.expired_since_refresh + ' alert(s) in that file have since expired and are hidden)' : ''}. This can be genuinely quiet, or the feeds may not be reachable: see the status cards below.</div></div>`;
     else {
@@ -251,6 +277,31 @@
   }
 
   // ---------------------------------------------------------------- sources tab
+  const CATLABEL = { AVAILABLE_VERIFIED: ['Available and verified', 'ev-current'], AVAILABLE_INCOMPLETE: ['Available but incomplete', 'ev-latest'],
+    STATIC_OR_PERIODIC: ['Static or periodic', 'ev-official'], BLOCKED: ['Blocked or unavailable', 'ev-nodata'], PLANNED: ['Planned, not implemented', 'ev-scenario'] };
+  function renderCoverageTab() {
+    const el = $('#tab-coverage'), c = D.coverage;
+    if (!c || !c.summary) { el.innerHTML = '<h2>Coverage audit</h2><div class="card"><span class="pill ev-nodata">No current data</span><div class="small">The coverage audit has not been built yet. It is generated from the data files the site serves.</div></div>'; return; }
+    const s = c.summary;
+    let h = '<h2>Coverage audit</h2><div class="small">Counted from the data this site serves (built ' + esc(fmt(c.generated_at)) + '). ' + esc(c.honesty) + '</div>';
+    h += '<div class="stats">' + [[s.states_represented + '/28', 'states'], [s.uts_represented + '/8', 'union territories'], [s.districts, 'districts'], [s.glacial_lakes, 'glacial lakes'],
+      [s.river_reaches_total, 'river reaches in graph'], [s.alerts_unexpired, 'unexpired alerts'], [s.stations, 'stations read'], [s.exposure_layers_populated, 'exposure layers']]
+      .map(x => '<div class="stat"><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>').join('') + '</div>';
+    if (s.missing && s.missing.length) h += '<div class="small warn">Not represented: ' + esc(s.missing.join(', ')) + '</div>';
+    Object.keys(CATLABEL).forEach(k => {
+      const rows = c.layers.filter(l => l.category === k); if (!rows.length) return;
+      h += '<h3 class="cat"><span class="pill ' + CATLABEL[k][1] + '">' + CATLABEL[k][0] + '</span></h3>';
+      rows.forEach(l => { h += '<div class="card"><b>' + esc(l.label) + '</b><div class="meta">' + esc(l.update) + ' &middot; records: ' + esc(l.records == null ? 'n/a' : l.records) +
+        ' &middot; data date: ' + esc(l.data_date ? fmt(l.data_date) : 'n/a') + '</div><div class="small">' + esc(l.note) + '</div>' +
+        (l.source_url ? '<div class="small"><a href="' + esc(l.source_url) + '" target="_blank" rel="noopener">Source</a></div>' : '') + '</div>'; });
+    });
+    h += '<h3>By region</h3><div class="tablewrap"><table><tr><th>Region</th><th>Dist.</th><th>Lakes</th><th>Reaches</th><th>Stations</th><th>Alerts</th></tr>' +
+      c.regions.map(r => '<tr><td>' + esc(r.name) + '<div class="small">' + esc(r.kind) + '</div></td><td>' + r.districts + '</td><td>' + r.glacial_lakes + '</td><td>' + r.river_reaches +
+        '</td><td>' + (r.stations == null ? 'n/a' : r.stations) + '</td><td>' + r.active_alerts + '</td></tr>').join('') + '</table></div>' +
+      '<div class="small">A zero means none in the data served, not that none exist. Station and lake coverage is uneven by design of the sources.</div>';
+    el.innerHTML = h;
+  }
+
   function renderSourcesTab() {
     let h = '<h2>Build status and blockers</h2>';
     if (!D.build) h += `<div class="card">${pill('NODATA')}<div class="small">No build report found. Run the pipeline.</div></div>`;
@@ -321,6 +372,11 @@
     anim.token++;
     const panel = $('#chainpanel');
     panel.hidden = false;
+    map.invalidateSize();
+    if (!window.matchMedia('(min-width: 901px)').matches) {
+      const y = panel.getBoundingClientRect().top + window.scrollY - $('#mapwrap').offsetHeight - 6;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    }
     const title = sig.type === 'alert' ? (sig.alert.event || 'Official alert') : sig.type === 'lake' ? (sig.props.name || 'Glacial lake ' + sig.lid) : sig.name + (sig.state ? ', ' + sig.state : '');
     const kind = sig.type === 'alert' ? 'Current official alert' : sig.type === 'lake' ? 'Glacial lake (static inventory)' : 'District';
     panel.innerHTML = `<button class="sm close" id="chain-close" aria-label="Close">Close</button>
@@ -453,6 +509,12 @@
 
   function setStep(n) { $$('#chain-body .step').forEach(s => s.classList.toggle('on', +s.dataset.step <= n)); }
 
+  // Keep the traced path clear of the chain panel: on wide screens the panel covers the right of the map.
+  function fitOpts(maxZoom) {
+    const wide = window.matchMedia('(min-width: 901px)').matches;
+    return wide ? { paddingTopLeft: [40, 40], paddingBottomRight: [480, 40], maxZoom } : { padding: [24, 24], maxZoom };
+  }
+
   function drawChain(sig, traced, starts, token) {
     // signal location
     const bounds = [];
@@ -467,7 +529,7 @@
         try { const b = dl.lyr.getBounds(); bounds.push(b.getSouthWest(), b.getNorthEast()); } catch (e) { /* ignore */ }
       });
     }
-    if (bounds.length) map.fitBounds(L.latLngBounds(bounds), { padding: [40, 40], maxZoom: 9 });
+    if (bounds.length) map.fitBounds(L.latLngBounds(bounds), fitOpts(9));
     setStep(2);
     if (!traced) { setStep(7); return; }
     const entry = new Set(starts);
@@ -494,7 +556,7 @@
           }
           if (i < order.length) requestAnimationFrame(() => setTimeout(tick, 30));
           else {
-            if (poly.length) map.fitBounds(L.latLngBounds(poly), { padding: [40, 40], maxZoom: 10 });
+            if (poly.length) map.fitBounds(L.latLngBounds(poly), fitOpts(10));
             setStep(5); setTimeout(() => { if (token === anim.token) { setStep(6); setTimeout(() => { if (token === anim.token) setStep(7); }, 500); } }, 600);
           }
         })();
@@ -505,7 +567,7 @@
   // ---------------------------------------------------------------- wiring
   function wire() {
     $$('.tab').forEach(t => t.onclick = () => {
-      $$('.tab').forEach(x => x.classList.toggle('active', x === t));
+      $$('.tab').forEach(x => { x.classList.toggle('active', x === t); x.setAttribute('aria-selected', x === t ? 'true' : 'false'); });
       $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     });
     document.addEventListener('click', e => {
@@ -532,13 +594,15 @@
     await loadAll();
     safely('alerts', indexAlerts);
     safely('map layers', buildLayers);
-    safely('status bar', renderTop); safely('signals panel', renderSignals); safely('layers panel', renderLayersTab); safely('sources panel', renderSourcesTab);
+    safely('status bar', renderTop); safely('signals panel', renderSignals); safely('layers panel', renderLayersTab); safely('sources panel', renderSourcesTab); safely('coverage panel', renderCoverageTab);
     safely('controls', wire);
     if (failedParts.length) {
       const b = $('#banner'); b.hidden = false; b.className = 'banner';
       b.innerHTML += ' Part of this page could not load (' + esc(failedParts.join(', ')) + '). The rest still works; see the browser console for details.';
     }
-    window.SHAILDHARA = { D, selectDistrict, selectLake, selectAlert, state: () => ({ current, G }) };   // handy for testing
+    const kb = $('#keybox'); if (kb) kb.open = window.matchMedia('(min-width: 901px)').matches;
+    const ld = $('#loading'); if (ld) ld.hidden = true;
+    window.SHAILDHARA = { D, selectDistrict, selectLake, selectAlert, state: () => ({ current, G }), map: () => map, build: '2026-10-12-r4' };   // handy for testing
   }
   main();
 })();

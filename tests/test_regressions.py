@@ -164,4 +164,61 @@ check(_calls["n"] == 0, "NWDP with an exhausted time budget makes no further per
 check([o["station"] for o in _obs] == ["S1"], "earlier reading kept only while recent; 30-day-old reading dropped")
 check(any("time budget" in b for b in _st["sources"]["nwdp_cwc"]["blockers"]), "budget cut-off is reported openly in the source status")
 check(_obs[0]["observed_at"] == (_now - timedelta(days=1)).isoformat(), "carried-over reading keeps its original observation time")
+
+# 15. an unreachable source never wipes the last good data or stamps an empty result as fresh
+class _Down:
+    def get(self, url, params=None, **kw):
+        return {"ok": False, "skipped": False, "unreachable": True, "status": 0, "headers": {}, "content": b"", "error": "down", "truncated": False}
+_keep = {"generated_at": "2026-01-01T00:00:00+00:00", "source": "x", "kind": "WARNING", "feeds": ["f"], "alerts": [{"event": "KEEP-ME", "sent": "2026-01-01T00:00:00+05:30"}]}
+json.dump(_keep, open(WEB_LIVE / "alerts.json", "w"))
+json.dump({"generated_at": "2026-01-01T00:00:00+00:00", "kind": "OBSERVED", "observations": [{"station": "KEEP", "lat": 20, "lon": 80, "parameter": "p", "value": 1.0, "observed_at": "2026-01-01T00:00:00+00:00", "dataset_id": "d"}]}, open(WEB_LIVE / "river_observations.json", "w"))
+_cfg2 = json.load(open(PROJECT / "config" / "live_sources.json"))
+_st2 = {"sources": {}}
+fetch_live.sachet(_Down(), _cfg2, None, _st2)
+fetch_live.nwdp(_Down(), _cfg2, _st2)
+_a = json.load(open(WEB_LIVE / "alerts.json")); _o = json.load(open(WEB_LIVE / "river_observations.json"))
+check(_a["alerts"][0]["event"] == "KEEP-ME" and _a["generated_at"] == _keep["generated_at"], "SACHET unreachable: previous alerts kept, refresh time not faked")
+check(_st2["sources"]["sachet"]["status"] == "BLOCKED", "SACHET unreachable is reported as BLOCKED")
+check(_o["observations"][0]["station"] == "KEEP" and _o["generated_at"] == "2026-01-01T00:00:00+00:00", "NWDP unreachable: previous readings kept, refresh time not faked")
+check(_st2["sources"]["nwdp_cwc"]["status"] == "BLOCKED", "NWDP unreachable is reported as BLOCKED")
+
+# 16. coverage audit: builds from whatever exists, never invents, and survives an empty data folder
+from pipeline import build_coverage
+_real = build_coverage.DATA
+_empty = TMP / "empty_data"; _empty.mkdir(exist_ok=True)
+build_coverage.DATA = _empty
+_c0 = build_coverage.build()
+check(_c0["summary"]["districts"] == 0 and _c0["summary"]["states_represented"] == 0 and len(_c0["summary"]["missing"]) == 36, "coverage on an empty data folder reports zeros and all 36 as missing, no crash")
+build_coverage.DATA = _real
+_c1 = build_coverage.build()
+check(_c1["summary"]["states_represented"] == 28 and _c1["summary"]["uts_represented"] == 8, "coverage on the committed data finds 28 states + 8 union territories")
+check(all(l["category"] in ("AVAILABLE_VERIFIED", "AVAILABLE_INCOMPLETE", "STATIC_OR_PERIODIC", "BLOCKED", "PLANNED") for l in _c1["layers"]), "every layer has one of the five categories")
+check("# SHAILDHARA coverage audit" in build_coverage.to_markdown(_c1), "human-readable coverage summary renders")
+
+# 17. state-constrained district matching: spelling variants and names in the alert text, never across states, tehsils stay unmatched
+import geopandas as gpd
+from shapely.geometry import Point as _Pt
+_D = gpd.GeoDataFrame({"did": ["a", "b", "c", "d", "e", "f"],
+                       "name": ["Siddharth Nagar", "Bilaspur", "Bilaspur", "Haridwar", "Ambala", "Jind"],
+                       "state": ["Uttar Pradesh", "Himachal Pradesh", "Chhattisgarh", "Uttarakhand", "Haryana", "Haryana"]},
+                      geometry=[_Pt(i, i) for i in range(6)], crs="EPSG:4326")
+def _m(sender, areas, text=""):
+    return fetch_live.match_districts({"sender": sender, "areas": areas, "headline": text, "description": "", "instruction": "", "polygons": []}, _D)
+check(_m("Uttar-Pradesh-SDMA", ["Rapti, Bansi, Siddarthnagar, Uttar Pradesh"]) == (["a"], "FUZZY_NAME_MATCH"), "spelling variant matched inside the alert's own state")
+check(_m("Haryana-SDMA", ["2 districts of Haryana"], "storm likely over Ambala, Jind in next 3 hours") == (["e", "f"], "TEXT_NAME_MATCH"), "district names in the alert text are matched within the state")
+check(_m("Haryana-SDMA", ["1 districts of Haryana"], "storm over Ambala, Jind") == ([], "UNMATCHED"), "more names than the alert states is rejected as incidental")
+check(_m("Haryana-SDMA", ["Haryana"], "heavy rain near Bilaspur") == ([], "UNMATCHED"), "a name that exists only in OTHER states is never matched across state lines")
+check(_m("Uttarakhand-SDMA", ["iqbalpura jhabrera roorkee and adjoining areas"], "") == ([], "UNMATCHED"), "a tehsil-only alert stays unmatched")
+check(_m("Himachal-Pradesh-SDMA", ["Bilaspur, Himachal Pradesh"]) == (["b"], "NAME_MATCH"), "exact area names still match first")
+check(fetch_live.stated_districts(["11 districts of Punjab"]) == 11 and fetch_live.stated_districts(["Ganga, Khagaria, Bihar"]) is None, "stated district count is parsed only when present")
+
+# 18. one shared time budget caps the whole live stage
+import time as _t
+fetch_live.LIVE_DEADLINE[0] = _t.monotonic() + 1080
+check(round(fetch_live.budget_left(540, 240)) == 540 and round(fetch_live.budget_left(900, 45)) == 900, "fresh live stage: each source gets its own budget")
+fetch_live.LIVE_DEADLINE[0] = _t.monotonic() + 1080 - 540
+check(fetch_live.budget_left(900, 45) <= 500, "after SACHET uses its budget, NWDP gets only what remains of the shared 18 minutes")
+fetch_live.LIVE_DEADLINE[0] = _t.monotonic() - 5
+check(fetch_live.budget_left(900, 45) == 0, "an exhausted shared budget leaves no time (never negative)")
+fetch_live.LIVE_DEADLINE[0] = None
 print(f"ALL REGRESSION TESTS PASSED ({ok})")

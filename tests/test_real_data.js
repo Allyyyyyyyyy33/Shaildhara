@@ -53,5 +53,20 @@ if (matched.length) {
   const t = C.traceMany(g, starts, null);
   ok(t.idx.length > 0, `alert chain from "${a.event}" (${a.districts.length} district(s)) traces ${t.idx.length} reaches`);
 }
+
+// ---- coverage audit must reconcile with the files actually served
+const cov = rd('coverage.json'), S = cov.summary;
+ok(S.districts === rd('districts.geojson').features.length && S.glacial_lakes === lakes.features.length, 'coverage counts reconcile with districts and glacial-lake files');
+ok(S.states_represented === 28 && S.uts_represented === 8 && S.missing.length === 0, 'all 28 states and 8 union territories are represented in the boundary layer');
+ok(S.alerts_in_file === alerts.alerts.length, 'coverage alert count matches alerts.json');
+const CATS = ['AVAILABLE_VERIFIED', 'AVAILABLE_INCOMPLETE', 'STATIC_OR_PERIODIC', 'BLOCKED', 'PLANNED'];
+ok(cov.layers.every(l => CATS.includes(l.category) && l.note), 'every audited layer has one of the five honest categories and a note');
+ok(cov.layers.some(l => l.category === 'BLOCKED') && /not claimed to be India-wide/.test(cov.honesty), 'coverage states what is blocked and does not over-claim');
+// ---- source-reported readings: implausible rainfall is flagged, plausible is not; river codes are never shown as names
+ok(!!C.obsFlag({ parameter: 'Telemetry Hourly Rainfall (mm)', value: 466 }) && !C.obsFlag({ parameter: 'Telemetry Hourly Rainfall (mm)', value: 12 }) && !C.obsFlag({ parameter: 'River Water Level (meter)', value: 112 }), 'implausible hourly rainfall is flagged; plausible values and water levels are not');
+const allRivers = new Set(); for (const f of linked) C.summarise(g, C.tracePath(g, f.properties.reach, null)).rivers.forEach(r => allRivers.add(r));
+ok([...allRivers].every(r => !/^\d+(\.\d+)?$/.test(r)), `no numeric river code is shown as a river name (${allRivers.size} real names across all lake chains)`);
+ok(g.names.some(n => /^\d+$/.test(n)), 'the data does contain numeric river codes (so the guard above is actually exercised)');
+ok(C.nonEnglish('राज्य के देहरादून, टिहरी, चमोली में बारिश की संभावना है') && !C.nonEnglish('River Kosi at Baltara continues to flow in above normal flood situation') && !C.nonEnglish(''), 'non-English alert text is detected (and English / empty text is not)');
 if (fails) { console.error(fails + ' FAILED'); process.exit(1); }
 console.log('REAL-DATA SMOKE TEST PASSED');

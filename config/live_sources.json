@@ -20,7 +20,7 @@
       "punjab"
     ],
     "max_cap_files_per_run": 400,
-    "budget_seconds": 420
+    "budget_seconds": 540
   },
   "nwdp": {
     "host": "https://nwdp.nwic.gov.in",
@@ -34,7 +34,7 @@
     "fresh_days": 14,
     "max_rows_per_resource": 2000,
     "max_obs_age_days": 7,
-    "budget_seconds": 600
+    "budget_seconds": 900
   },
   "imd": {
     "enabled": true,
@@ -54,5 +54,6 @@
     "url": "https://reactjs.imd.gov.in/geoserver/wfs",
     "typename": "imd:district_warnings_india",
     "notes": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
-  }
+  },
+  "live_total_seconds": 1080
 }

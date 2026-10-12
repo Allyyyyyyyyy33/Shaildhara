@@ -154,11 +154,12 @@ a2 = {"polygons": ["28.5,77.5 28.5,78.0 29.0,78.0 29.0,77.5 28.5,77.5"], "areas"
 ids, how = fetch_live.match_districts(a2, dist_pkl)
 assert how == "POLYGON" and len(ids) == 1, (ids, how)
 
-# SACHET unreachable => BLOCKED with a reason, no invented alerts
+# SACHET unreachable => BLOCKED with a reason; the last good alerts are kept (never replaced by an empty list stamped as fresh), nothing invented
 status = {"sources": {}}
+_before = json.load(open(WEB_LIVE / "alerts.json"))
 fetch_live.sachet(FakeHttp({}), cfg, dist_pkl, status)
 assert status["sources"]["sachet"]["status"] == "BLOCKED"
-assert json.load(open(WEB_LIVE / "alerts.json"))["alerts"] == []
+assert json.load(open(WEB_LIVE / "alerts.json")) == _before
 
 # IMD: no key => NEEDS_API_KEY, nothing fabricated
 os.environ.pop("IMD_API_KEY", None)

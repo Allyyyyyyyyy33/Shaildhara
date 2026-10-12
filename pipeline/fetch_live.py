@@ -100,7 +100,7 @@ def cap_polygon(text):
 
 
 def match_districts(alert, dists):
-    """Match an alert to district ids. Method is recorded: POLYGON (geometric) or NAME_MATCH (text, lower confidence)."""
+    """Match an alert to district ids. Method is recorded: POLYGON (geometric); NAME_MATCH (area name); FUZZY_NAME_MATCH / TEXT_NAME_MATCH (state-constrained, lower confidence); else UNMATCHED."""
     if dists is None:
         return [], "NO_DISTRICT_LAYER"
     polys = [cap_polygon(p) for p in alert.get("polygons", [])]
@@ -120,12 +120,73 @@ def match_districts(alert, dists):
     for _, d in dists.iterrows():
         names.setdefault(normalise_name(d["name"]), []).append(d)
     ids = []
+    pieces = []
     for area in alert.get("areas", []):
         for piece in re.split(r"[;,/]|\band\b", area):
+            pieces.append(piece)
             key = normalise_name(piece)
             if key in names:
-                ids += [r["did"] for r in names[key]]
-    return sorted(set(ids)), ("NAME_MATCH" if ids else "UNMATCHED")
+                ids += [(r["did"], r.get("state")) for r in names[key]]
+    state = alert_state(alert, dists)
+    if state:      # a district name shared by several states (e.g. Bilaspur) must only match inside the alert's own state
+        ids = [i for i in ids if i[1] == state]
+    ids = [i[0] for i in ids]
+    if ids:
+        return sorted(set(ids)), "NAME_MATCH"
+    # Nothing matched exactly. Try two lower-confidence, STATE-CONSTRAINED fallbacks (a name is never matched across state lines).
+    if state:
+        fz = fuzzy_district_ids(pieces, dists, state)
+        if fz:
+            return fz, "FUZZY_NAME_MATCH"
+        tx = text_district_ids(alert, dists, state)
+        if tx:
+            return tx, "TEXT_NAME_MATCH"
+    return [], "UNMATCHED"
+
+
+def stated_districts(areas):
+    """The number of districts an alert says it covers ('11 districts of Punjab'), or None."""
+    m = re.search(r"\b(\d{1,3})\s+districts?\b", " ".join(areas or []), re.I)
+    return int(m.group(1)) if m else None
+
+
+def alert_state(alert, dists):
+    """The one state an alert belongs to, from the sender (e.g. 'Uttar-Pradesh-SDMA') and the area text; None if unclear or several."""
+    if "state" not in dists.columns:
+        return None
+    hay = " " + normalise_name(" ".join([alert.get("sender") or ""] + list(alert.get("areas", [])))) + " "
+    found = {st for st in dists["state"].dropna().unique() if f" {normalise_name(st)} " in hay}
+    found = {a for a in found if not any(a != b and normalise_name(a) in normalise_name(b) for b in found)}   # keep the longest of nested names
+    return next(iter(found)) if len(found) == 1 else None
+
+
+def fuzzy_district_ids(pieces, dists, state, min_ratio=0.88, margin=0.04):
+    """Spelling variants (Siddarthnagar / Siddharth Nagar): accept only a clearly best, near-exact match inside the alert's state."""
+    from difflib import SequenceMatcher
+    cands = [(normalise_name(r["name"]).replace(" ", ""), r["did"]) for _, r in dists[dists["state"] == state].iterrows()]
+    out = []
+    for piece in pieces:
+        k = normalise_name(piece).replace(" ", "")
+        if len(k) < 5 or normalise_name(state).replace(" ", "") == k:
+            continue
+        sc = sorted(((SequenceMatcher(None, k, c).ratio(), d) for c, d in cands), reverse=True)
+        if sc and sc[0][0] >= min_ratio and (len(sc) < 2 or sc[0][0] - sc[1][0] >= margin):
+            out.append(sc[0][1])
+    return sorted(set(out))
+
+
+def text_district_ids(alert, dists, state):
+    """'N districts of <state>' alerts that list the district names in their (English) text: whole-word match, same state only."""
+    text = " " + normalise_name(" ".join([alert.get("headline") or "", alert.get("description") or "", alert.get("instruction") or ""])) + " "
+    out = []
+    for _, r in dists[dists["state"] == state].iterrows():
+        n = normalise_name(r["name"])
+        if len(n) >= 4 and f" {n} " in text:
+            out.append(r["did"])
+    stated = stated_districts(alert.get("areas"))
+    if stated and len(set(out)) > stated:      # more names than the alert says it covers: incidental mentions, not a match
+        return []
+    return sorted(set(out))
 
 
 def sachet(http, cfg, dists, status):
@@ -182,7 +243,7 @@ def sachet(http, cfg, dists, status):
     save_json(CACHE / "sachet_etags.json", etags)
     # fetch each CAP file once (cached by link)
     fetched = 0
-    cap_deadline = time.monotonic() + sc.get("budget_seconds", 420)
+    cap_deadline = time.monotonic() + budget_left(sc.get("budget_seconds", 540), reserve=240)   # leave NWDP at least ~4 min
     cap_skipped = 0
     now = utc_now()
     alerts = []
@@ -222,7 +283,7 @@ def sachet(http, cfg, dists, status):
             "event": cap.get("event"), "headline": cap.get("headline"), "severity": cap.get("severity"), "urgency": cap.get("urgency"),
             "certainty": cap.get("certainty"), "sent": cap.get("sent"), "effective": cap.get("effective"), "expires": cap.get("expires"),
             "description": (cap.get("description") or "")[:600], "instruction": (cap.get("instruction") or "")[:400],
-            "areas": cap.get("areas", [])[:12], "districts": ids[:60], "match_method": method, "feed": it.get("_feed"), "cap_url": link,
+            "areas": cap.get("areas", [])[:12], "districts": ids[:60], "districts_stated": stated_districts(cap.get("areas", [])), "match_method": method, "feed": it.get("_feed"), "cap_url": link,
             "kind": "WARNING", "issued_by_official_agency": True})
     if cap_skipped:
         entry["blockers"].append(f"SACHET time budget reached: {cap_skipped} CAP file(s) not fetched this run; they are retried next run (some current alerts may be missing until then)")
@@ -237,8 +298,11 @@ def sachet(http, cfg, dists, status):
         entry.update(status="NO_CURRENT_ALERTS", detail=f"{len(feed_ok)} feed(s) read; no unexpired alerts found. This is not an error.")
     else:
         entry.update(status="OK", detail=f"{len(alerts)} current alert(s) from {len(feed_ok)} feed(s)")
-    save_json(WEB_LIVE / "alerts.json", {"generated_at": utc_iso(), "source": "NDMA SACHET (aggregates IMD, CWC, GSI, INCOIS and others)",
-                                         "kind": "WARNING", "feeds": feed_ok, "alerts": alerts})
+    if feed_ok or not (WEB_LIVE / "alerts.json").exists():
+        save_json(WEB_LIVE / "alerts.json", {"generated_at": utc_iso(), "source": "NDMA SACHET (aggregates IMD, CWC, GSI, INCOIS and others)",
+                                             "kind": "WARNING", "feeds": feed_ok, "alerts": alerts})
+    else:   # source unreachable this run: never replace the last good alerts with an empty list stamped as fresh
+        entry["detail"] += " The last successfully read alerts are kept unchanged and keep their own refresh time."
     record_source(dict(source_id="sachet", dataset_id="sachet", title="NDMA SACHET CAP alerts", organisation="National Disaster Management Authority",
                        authority="indian_government", landing_page=base, url=feed_ok[0] if feed_ok else base, retrieved_at=utc_iso(),
                        data_date=entry["data_date"], kind="WARNING", status=entry["status"], note=entry["detail"],
@@ -255,6 +319,17 @@ TIME = re.compile(r"(date|time|timestamp|observed)", re.I)
 VAL = re.compile(r"(water.?level|^level$|discharge|rainfall|^value$|stage|snow)", re.I)   # kept for reference
 UNIT = re.compile(r"\(([^)]*)\)\s*$")
 SKIP_VAL = re.compile(r"^(is_|rl_|meansea|slno|area|velocity)|code$", re.I)
+
+
+LIVE_DEADLINE = [None]     # one shared time budget for the whole live stage (set in run())
+
+
+def budget_left(own_seconds, reserve=0):
+    """Seconds this source may still use: its own budget, capped by what remains of the shared live budget."""
+    left = own_seconds
+    if LIVE_DEADLINE[0] is not None:
+        left = min(left, LIVE_DEADLINE[0] - time.monotonic() - reserve)
+    return max(left, 0)
 
 
 def valid_obs(o):
@@ -323,7 +398,7 @@ def nwdp(http, cfg, status):
     if rest:                                                          # rotate the rest so every dataset is re-checked over a few runs
         k = int(utc_now().timestamp() // 10800) * 40 % len(rest)
         rest = rest[k:] + rest[:k]
-    deadline = time.monotonic() + nc.get("budget_seconds", 600)
+    deadline = time.monotonic() + budget_left(nc.get("budget_seconds", 900), reserve=45)
     not_reached = 0
     refreshed = set()
     for ds, res in first + rest:
@@ -410,8 +485,11 @@ def nwdp(http, cfg, status):
     else:
         entry.update(status="CATALOGUE_ONLY",
                      detail=f"{len(catalogue)} dataset(s) found, {n_fresh} updated in the last {nc.get('fresh_days', 14)} days, but no station observations could be extracted automatically (schema not recognised or not queryable). See the catalogue.")
-    save_json(WEB_LIVE / "nwdp_catalogue.json", {"generated_at": utc_iso(), "datasets": list(catalogue.values()), "schemas_checked": schemas})
-    save_json(WEB_LIVE / "river_observations.json", {"generated_at": utc_iso(), "kind": "OBSERVED", "observations": obs})
+    if catalogue or not (WEB_LIVE / "river_observations.json").exists():
+        save_json(WEB_LIVE / "nwdp_catalogue.json", {"generated_at": utc_iso(), "datasets": list(catalogue.values()), "schemas_checked": schemas})
+        save_json(WEB_LIVE / "river_observations.json", {"generated_at": utc_iso(), "kind": "OBSERVED", "observations": obs})
+    else:   # source unreachable this run: keep the last good readings (each reading shows its own observation time)
+        entry["detail"] += " The last successfully read data is kept unchanged."
     record_source(dict(source_id="nwdp_cwc", dataset_id="nwdp_cwc", title="NWDP/CWC telemetry catalogue", organisation="NWIC / Central Water Commission",
                        authority="indian_government", landing_page=host, url=host + "/api/3/action/package_search", retrieved_at=utc_iso(),
                        data_date=entry["data_date"], kind="OBSERVED", status=entry["status"], note=entry["detail"],
@@ -515,6 +593,7 @@ def load_districts():
 def run():
     ensure_dirs()
     cfg = load_config("live_sources.json")
+    LIVE_DEADLINE[0] = time.monotonic() + cfg.get("live_total_seconds", 1080)
     http = Http()
     status = {"generated_at": utc_iso(), "sources": {}}
     dists = load_districts()

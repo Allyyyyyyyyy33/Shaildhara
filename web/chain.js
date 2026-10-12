@@ -119,6 +119,22 @@
     return !isNaN(sent) && (now - sent) / 3.6e6 <= 48;
   }
 
+  // A source-reported reading that cannot be physical is flagged, never silently trusted or silently altered.
+  function obsFlag(o) {
+    if (o && /rain/i.test(o.parameter || '') && /hour/i.test(o.parameter || '') && Number(o.value) > 300) {
+      return 'Exceeds any plausible hourly rainfall (over 300 mm): treat as unverified';
+    }
+    return null;
+  }
+
+  // Alerts are shown exactly as issued; many state alerts are in Hindi, Punjabi or other scripts. Say so rather than leave it unexplained.
+  function nonEnglish(text) {
+    const t = String(text || '').replace(/\s+/g, '');
+    if (t.length < 10) return false;
+    const non = (t.match(/[^\x00-\x7F]/g) || []).length;
+    return non / t.length > 0.3;
+  }
+
   const SEV = { extreme: 4, severe: 3, moderate: 2, minor: 1 };
   function severityRank(s) { return SEV[String(s || '').toLowerCase()] || 0; }
 
@@ -157,5 +173,5 @@
     return out;
   }
 
-  return { LABELS, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
+  return { LABELS, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
 });
