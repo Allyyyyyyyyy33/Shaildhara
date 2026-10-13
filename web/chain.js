@@ -14,10 +14,21 @@
     OFFICIAL: { text: 'Official', cls: 'ev-official', tip: 'Issued by a government agency. SHAILDHARA shows it as issued and adds nothing.' },
     CURRENT: { text: 'Current', cls: 'ev-current', tip: 'The data date is within the freshness window for this source.' },
     LATEST: { text: 'Latest official update', cls: 'ev-latest', tip: 'Newest official version available, not a live feed. Check the date shown.' },
-    COMPUTED: { text: 'Computed spatial connection', cls: 'ev-computed', tip: 'Calculated by SHAILDHARA from map geometry. A geographic link, not a physical prediction.' },
+    COMPUTED: { text: 'Computed spatial connection', cls: 'ev-computed', tip: 'Calculated by SHAILDHARA from map geometry. A geographic link, not a physical prediction or an official route.' },
+    PROXIMITY: { text: 'Nearest mapped river (unverified)', cls: 'ev-proximity', tip: 'Matched only because the river is the closest one in the map data. No source confirms that this water body drains into it.' },
     SCENARIO: { text: 'Scenario', cls: 'ev-scenario', tip: 'A user-chosen or illustrative setting. Not a forecast.' },
-    NODATA: { text: 'No current data', cls: 'ev-nodata', tip: 'No reliable current information is available for this item.' },
+    NODATA: { text: 'Not available', cls: 'ev-nodata', tip: 'No reliable, machine-readable current information is published for this item. SHAILDHARA leaves it blank rather than estimate it.' },
   };
+
+  // How a glacial lake is allowed to connect to the river network. Nothing in the data confirms that a lake drains into a
+  // given reach, so every lake link is a proximity candidate. Links over 5 km are too weak to trace and are shown as context only.
+  function lakeLink(quality, snapKm) {
+    const km = snapKm == null ? null : Number(snapKm);
+    if (quality === 'close') return { trace: true, tier: 'close', text: 'a mapped river reach lies within 1 km of the lake' };
+    if (quality === 'moderate') return { trace: true, tier: 'moderate', text: 'the nearest mapped river reach is 1 to 5 km from the lake' };
+    if (quality === 'weak') return { trace: false, tier: 'weak', text: 'the nearest mapped river reach is ' + (km == null ? '5 to 10' : km.toFixed(1)) + ' km away, too far to treat as a connection' };
+    return { trace: false, tier: 'none', text: 'no river reach within 10 km in the network data' };
+  }
 
   function makeGraph(net) {
     return {
@@ -173,5 +184,5 @@
     return out;
   }
 
-  return { LABELS, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
+  return { LABELS, lakeLink, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
 });

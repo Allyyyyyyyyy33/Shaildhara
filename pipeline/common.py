@@ -100,11 +100,15 @@ def save_json(path, obj, compact=True):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     obj = _clean(obj)
-    with open(path, "w", encoding="utf-8") as f:
+    # Write to a temporary file and swap it in, so a run that is killed part-way (for example by the workflow time limit)
+    # can never leave a half-written JSON file behind for the website to choke on.
+    tmp = path.with_name(path.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
         if compact:
             json.dump(obj, f, ensure_ascii=False, separators=(",", ":"), default=str, allow_nan=False)
         else:
             json.dump(obj, f, ensure_ascii=False, indent=2, default=str, allow_nan=False)
+    os.replace(tmp, path)
 
 
 def sha256_file(path, chunk=1 << 20):

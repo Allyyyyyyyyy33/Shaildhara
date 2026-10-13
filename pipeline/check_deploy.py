@@ -59,14 +59,14 @@ def main():
         for u in expo.get("unavailable", []):
             warnings.append(f"exposure '{u['key']}' unavailable: {u['reason']}")
     elif chain_ok:
-        warnings.append("No exposure layers built: step 5 of the chain will say 'No current data' (honest, but thin). Run with --heavy or add manual files.")
+        warnings.append("No exposure layers built: step 5 of the chain will say 'Not available' (honest, but thin). Run with --heavy or add manual files.")
     st = read_json(WEB_LIVE / "status.json")
     if st:
         for sid, e in st.get("sources", {}).items():
             line = f"live {sid}: {e.get('status')} ({e.get('records', 0)} records) - {e.get('detail', '')[:140]}"
             (info if e.get("status") in ("OK", "NO_CURRENT_ALERTS") else warnings).append(line)
     else:
-        warnings.append("Live stage has not run: site will show 'No current data' for alerts. Run with --live.")
+        warnings.append("Live stage has not run: site will show 'Alerts not loaded'. Run with --live.")
     big = [(p.name, _size(p)) for p in WEB_DATA.rglob("*.json*") if _size(p) > 25]
     for n, s in big:
         warnings.append(f"{n} is {s:.0f} MB: slow first load; consider a higher simplification tolerance")

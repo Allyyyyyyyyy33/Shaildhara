@@ -52,5 +52,12 @@ ok(C.severityRank('Extreme') === 4 && C.severityRank('weird') === 0, 'severity r
 const loop = C.makeGraph({ ids: [1, 2], next: [1, 0], end: [0, 0], len_km: [1, 1], ord: [1, 1], dis_cms: [1, 1], district: [-1, -1], name: [-1, -1], coords: [[], []] });
 const lp = C.tracePath(loop, 0, null);
 ok(lp.reason === 'loop' && lp.idx.length === 2, 'cycle detected without hanging');
+
+// 8. lake-to-river links are proximity candidates: close/moderate may be traced, weak/unlinked never
+ok(C.lakeLink('close', 0.4).trace === true && C.lakeLink('moderate', 3).trace === true, 'close and moderate lake links may be traced (as proximity candidates)');
+ok(C.lakeLink('weak', 7.2).trace === false && C.lakeLink('unlinked', null).trace === false && C.lakeLink(undefined, null).trace === false, 'weak, unlinked and unknown lake links are never traced');
+ok(/too far/.test(C.lakeLink('weak', 7.2).text) && /7\.2 km/.test(C.lakeLink('weak', 7.2).text), 'weak link explains itself with the real distance');
+ok(C.LABELS.PROXIMITY && /unverified/i.test(C.LABELS.PROXIMITY.text), 'a proximity label exists and says unverified');
+ok(!/no current data/i.test(C.LABELS.NODATA.text), 'the not-available label is not alarming');
 console.log(fails ? `${fails} FAILED` : 'ALL CHAIN TESTS PASSED');
 process.exit(fails ? 1 : 0);

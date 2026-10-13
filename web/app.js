@@ -26,6 +26,18 @@
     if (isNaN(d)) return esc(iso);
     return d.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' IST';
   };
+  const ago = iso => {
+    const t = Date.parse(iso); if (!iso || isNaN(t)) return '';
+    const h = (Date.now() - t) / 3.6e6;
+    if (h < 0) return 'just now';
+    if (h < 1) return Math.max(1, Math.round(h * 60)) + ' min ago';
+    if (h < 48) return Math.round(h) + ' h ago';
+    return Math.round(h / 24) + ' days ago';
+  };
+  const SRC_STATUS = {
+    OK: 'Reading successfully', NO_CURRENT_ALERTS: 'Reading successfully (no alerts in effect)', NEEDS_API_KEY: 'Not configured (needs an API key)',
+    DISABLED: 'Not enabled', BLOCKED: 'Unreachable at last attempt (last good data kept)', ERROR: 'Error at last attempt (last good data kept)', CATALOGUE_ONLY: 'Catalogue only',
+  };
   const pill = (key, text) => { const L = C.LABELS[key]; return `<span class="pill ${L.cls}" title="${esc(L.tip)}">${esc(text || L.text)}</span>`; };
   const prov = o => {
     const p = [`Source: ${esc(o.source)}`];
@@ -92,7 +104,8 @@
         '<div><i class="sw" style="background:#66bb6a;border:1px solid #1b5e20;border-radius:50%"></i>Station reading (CWC/NWDP, source-reported)</div>' +
         '<div><i class="sw" style="background:#e65100;opacity:.6"></i>District with an unexpired official alert</div>' +
         '<div><i class="sw ln" style="background:#ff6f00"></i>Chain start (alert districts / lake)</div>' +
-        '<div><i class="sw ln" style="background:#0b6fa4"></i>Connected downstream reaches (computed, not a forecast)</div>';
+        '<div><i class="sw ln" style="background:#0b6fa4"></i>Mapped downstream reaches (computed, not a forecast)</div>' +
+        '<div><i class="sw ln dash"></i>Lake to nearest river: proximity only, unverified</div>';
       L.DomEvent.disableClickPropagation(d); return d;
     };
     key.addTo(map);
@@ -160,12 +173,18 @@
       b.hidden = false; b.className = 'banner';
       b.innerHTML = 'Some foundation layers are not available yet: <strong>' + esc(missing.join(', ')) + '</strong>. Open the Sources tab for the exact reasons and actions.';
     } else b.hidden = true;
-    const bits = [];
-    if (D.build) bits.push('Data built: ' + fmt(D.build.generated_at));
+    const chips = [];
     const al = D.live && D.live.sources && D.live.sources.sachet;
-    bits.push(D.alerts ? 'Alerts: ' + alertList().length + ' current (feed refreshed ' + fmt(D.alerts.generated_at) + ')' : 'Alerts: ' + (al ? esc(al.status) : 'not loaded'));
-    $('#top-status').innerHTML = bits.join(' &nbsp;|&nbsp; ');
-    $('#legend').innerHTML = ['OFFICIAL', 'CURRENT', 'LATEST', 'COMPUTED', 'SCENARIO', 'NODATA'].map(k => pill(k)).join('');
+    const ob = D.live && D.live.sources && D.live.sources.nwdp_cwc;
+    if (D.live && D.live.generated_at) {
+      const late = (Date.now() - Date.parse(D.live.generated_at)) / 3.6e6 > 12;
+      chips.push(`<span class="chip ${late ? 'chip-warn' : 'chip-ok'}" title="Live feeds are re-read about every 3 hours when GitHub runs the scheduled job.">Live feeds refreshed ${esc(ago(D.live.generated_at))}${late ? ' (overdue)' : ''}</span>`);
+    } else chips.push('<span class="chip chip-warn">Live refresh time unknown</span>');
+    chips.push(D.alerts ? `<span class="chip">Official alerts in effect: <b>${alertList().length}</b></span>` : `<span class="chip chip-warn">Alerts: ${al ? esc(SRC_STATUS[al.status] || al.status) : 'not loaded'}</span>`);
+    if (ob && ob.data_date) chips.push(`<span class="chip" title="Newest station reading in the data. Station readings are the latest official update, not a live stream.">Newest river reading ${esc(ago(ob.data_date))}</span>`);
+    if (D.build) chips.push(`<span class="chip" title="Boundaries, river network, glacial lakes and exposure layers are static snapshots, rebuilt only when the project is rebuilt.">Map layers: static snapshot, built ${esc(fmt(D.build.stages && D.build.stages.static && D.build.stages.static.finished_at || D.build.generated_at).replace(/, \d\d:\d\d IST/, ''))}</span>`);
+    $('#top-status').innerHTML = chips.join('');
+    $('#legend').innerHTML = ['OFFICIAL', 'CURRENT', 'LATEST', 'COMPUTED', 'PROXIMITY', 'SCENARIO', 'NODATA'].map(k => pill(k)).join('');
   }
 
   // ---------------------------------------------------------------- signals tab
@@ -192,7 +211,7 @@
   function sourceStatusCards() {
     const src = (D.live && D.live.sources) || {};
     const keys = Object.keys(src);
-    if (!keys.length) return `<div class="card">${pill('NODATA')} <div class="small">No live-source status file found. Run the pipeline's live stage (<code>python -m pipeline.build_all --live</code>).</div></div>`;
+    if (!keys.length) return `<div class="card">${pill('NODATA', 'Status not loaded')} <div class="small">The live-source status file could not be read, so refresh times cannot be shown.</div></div>`;
     return keys.map(k => {
       const s = src[k];
       const ok = s.status === 'OK';
@@ -212,8 +231,8 @@
     if (D.alerts && ss && (ss.status === 'BLOCKED' || ss.status === 'ERROR')) {
       h += `<div class="card">${pill('LATEST')}<div class="small"><b>The official alert feed could not be read in the latest refresh.</b> Alerts shown are from the last successful read (${esc(fmt(D.alerts.generated_at))}) and may have been updated or cancelled since. Check sachet.ndma.gov.in for the live position.</div></div>`;
     }
-    if (!D.alerts) h += `<div class="card">${pill('NODATA')}<div class="small">No alert file found. Run the live stage of the pipeline.</div></div>`;
-    else if (!al.length) h += `<div class="card">${pill('NODATA')}<div class="small">No unexpired alerts in the feeds read at ${fmt(D.alerts.generated_at)}${D.alerts.expired_since_refresh ? ' (' + D.alerts.expired_since_refresh + ' alert(s) in that file have since expired and are hidden)' : ''}. This can be genuinely quiet, or the feeds may not be reachable: see the status cards below.</div></div>`;
+    if (!D.alerts) h += `<div class="card">${pill('NODATA', 'Alerts not loaded')}<div class="small">The alert file could not be read. Check sachet.ndma.gov.in for current official alerts.</div></div>`;
+    else if (!al.length) h += `<div class="card">${pill('CURRENT', 'No alerts in effect')}<div class="small">No unexpired alerts in the feeds read at ${fmt(D.alerts.generated_at)}${D.alerts.expired_since_refresh ? ' (' + D.alerts.expired_since_refresh + ' alert(s) in that file have since expired and are hidden)' : ''}. This usually means a quiet period; if a feed was unreachable, the source status below says so.</div></div>`;
     else {
       if (D.alerts.expired_since_refresh) h += `<div class="small">${D.alerts.expired_since_refresh} alert(s) from the ${fmt(D.alerts.generated_at)} refresh have expired and are hidden.</div>`;
       const order = al.map((a, i) => i).sort((x, y) => C.severityRank(al[y].severity) - C.severityRank(al[x].severity));
@@ -222,7 +241,7 @@
     }
     h += '<h2>Live source status</h2>' + sourceStatusCards();
     h += '<h2>Mountain inventory: glacial lakes</h2>';
-    if (!D.lakes) h += `<div class="card">${pill('NODATA')}<div class="small">Glacial-lake layer not built yet.</div></div>`;
+    if (!D.lakes) h += `<div class="card">${pill('NODATA', 'Layer not loaded')}<div class="small">The glacial-lake layer could not be read.</div></div>`;
     else {
       const states = Array.from(new Set(D.lakes.features.map(f => f.properties.state).filter(Boolean))).sort();
       h += `<div class="small">${pill('LATEST', 'Latest official update')} Static CWC inventory (data date ${esc((sourceInfo('glacial_lakes_cwc') || {}).data_date || 'unknown')}), not a live feed.</div>
@@ -243,7 +262,7 @@
       const p = f.properties;
       return `<div class="card" data-lake="${esc(p.lid)}"><h3>${esc(p.name || ('Glacial lake ' + p.lid))}</h3>
         <div class="meta">${esc(p.state || 'state unknown')} &middot; area ${p.area_ha_calc != null ? (+p.area_ha_calc).toFixed(1) + ' ha (calculated from outline)' : 'unknown'}</div>
-        <div class="meta">River link: ${esc(p.quality || 'not computed')}${p.snap_km != null ? ' (' + p.snap_km + ' km to nearest river reach)' : ''}</div></div>`;
+        <div class="meta">Nearest mapped river: ${p.snap_km != null ? esc(p.snap_km) + ' km' : 'none within 10 km'} (${C.lakeLink(p.quality, p.snap_km).trace ? 'proximity only, drainage unverified' : 'too far or absent: no connection shown'})</div></div>`;
     }).join('') + (fs.length > 40 ? `<div class="small">Showing the 40 largest of ${fs.length}. Use Search for others.</div>` : '');
   }
 
@@ -255,7 +274,7 @@
     ];
     let h = '<h2>Map layers</h2>';
     rows.forEach(([k, label, on, avail]) => {
-      h += `<label class="layer-row"><input type="checkbox" data-layer="${k}" ${on && avail ? 'checked' : ''} ${avail ? '' : 'disabled'}> ${esc(label)} ${avail ? '' : pill('NODATA')}</label>`;
+      h += `<label class="layer-row"><input type="checkbox" data-layer="${k}" ${on && avail ? 'checked' : ''} ${avail ? '' : 'disabled'}> ${esc(label)} ${avail ? '' : pill('NODATA', 'Not loaded')}</label>`;
     });
     h += `<h2>Alert shading key</h2><div class="small">District fill follows the CAP severity written by the issuing agency: ` +
       [4, 3, 2, 1].map(s => `<span class="pill" style="background:${SEV_COLOR[s]}">${['', 'Minor', 'Moderate', 'Severe', 'Extreme'][s]}</span>`).join('') + '</div>';
@@ -281,9 +300,15 @@
     STATIC_OR_PERIODIC: ['Static or periodic', 'ev-official'], BLOCKED: ['Blocked or unavailable', 'ev-nodata'], PLANNED: ['Planned, not implemented', 'ev-scenario'] };
   function renderCoverageTab() {
     const el = $('#tab-coverage'), c = D.coverage;
-    if (!c || !c.summary) { el.innerHTML = '<h2>Coverage audit</h2><div class="card"><span class="pill ev-nodata">No current data</span><div class="small">The coverage audit has not been built yet. It is generated from the data files the site serves.</div></div>'; return; }
+    if (!c || !c.summary) { el.innerHTML = '<h2>Coverage audit</h2><div class="card"><span class="pill ev-nodata">Not available</span><div class="small">The coverage audit file could not be read.</div></div>'; return; }
     const s = c.summary;
-    let h = '<h2>Coverage audit</h2><div class="small">Counted from the data this site serves (built ' + esc(fmt(c.generated_at)) + '). ' + esc(c.honesty) + '</div>';
+    let h = '<h2>How to read the evidence</h2>' + [
+      ['OFFICIAL', 'Current observations and alerts', 'Official alerts (NDMA SACHET) and CWC/NWDP station readings, shown as issued with their own dates. Station readings are the latest official update, not a live stream, and cover only the stations whose datasets are machine-readable.'],
+      ['LATEST', 'Historical inventories', 'Glacial lakes, river lines, state and district boundaries. These are dated snapshots from official portals. A lake being mapped does not mean it is dangerous or has changed.'],
+      ['COMPUTED', 'Computed spatial relationships', 'River paths, districts along them and nearby assets are calculated from map geometry. Lake-to-river links are nearest-river matches only and are not confirmed drainage. Not a forecast, not an official route.'],
+      ['SCENARIO', 'Scenarios and settings', 'The downstream display distance and the suggested checks are user-facing aids, not predictions.'],
+    ].map(r => '<div class="card">' + pill(r[0], r[1]) + '<div class="small">' + esc(r[2]) + '</div></div>').join('') +
+    '<h2>Coverage audit</h2><div class="small">Counted from the data this site serves (built ' + esc(fmt(c.generated_at)) + '). ' + esc(c.honesty) + '</div>';
     h += '<div class="stats">' + [[s.states_represented + '/28', 'states'], [s.uts_represented + '/8', 'union territories'], [s.districts, 'districts'], [s.glacial_lakes, 'glacial lakes'],
       [s.river_reaches_total, 'river reaches in graph'], [s.alerts_unexpired, 'unexpired alerts'], [s.stations, 'stations read'], [s.exposure_layers_populated, 'exposure layers']]
       .map(x => '<div class="stat"><b>' + esc(x[0]) + '</b><span>' + esc(x[1]) + '</span></div>').join('') + '</div>';
@@ -302,9 +327,25 @@
     el.innerHTML = h;
   }
 
+  function freshnessTable() {
+    const rows = [];
+    const live = (D.live && D.live.sources) || {};
+    Object.keys(live).forEach(k => {
+      const v = live[k], ok = v.status === 'OK' || v.status === 'NO_CURRENT_ALERTS';
+      rows.push([v.name || k, ok ? 'Live feed' : 'Live feed (not reading)', v.data_date ? fmt(v.data_date) + (ago(v.data_date) ? ' (' + ago(v.data_date) + ')' : '') : 'none', v.fetched_at ? fmt(v.fetched_at) + ' (' + ago(v.fetched_at) + ')' : 'never', SRC_STATUS[v.status] || v.status || 'unknown']);
+    });
+    ((D.sources && D.sources.sources) || []).filter(x => !live[x.source_id] && x.source_id !== 'sachet' && x.source_id !== 'nwdp_cwc').forEach(x => {
+      rows.push([x.title || x.source_id, /unavailable/.test(x.dataset_id || '') ? 'Not loaded' : 'Static snapshot', x.data_date || 'unknown', x.retrieved_at ? fmt(x.retrieved_at) : 'n/a', x.status || 'n/a']);
+    });
+    if (!rows.length) return '';
+    return '<h2>Data freshness</h2><div class="small">Only rows marked <b>Live feed</b> are refreshed on a schedule. Everything else is a snapshot from the date shown.</div><div class="tablewrap"><table><tr><th>Dataset</th><th>Type</th><th>Data date</th><th>Last checked</th><th>Status</th></tr>' +
+      rows.map(r => '<tr>' + r.map(c => '<td>' + esc(c) + '</td>').join('') + '</tr>').join('') + '</table></div>';
+  }
+
   function renderSourcesTab() {
-    let h = '<h2>Build status and blockers</h2>';
-    if (!D.build) h += `<div class="card">${pill('NODATA')}<div class="small">No build report found. Run the pipeline.</div></div>`;
+    let h = freshnessTable() + '<details class="provdetails"><summary>Technical details, blockers and limitations</summary>';
+    h += '<h2>Build status and blockers</h2>';
+    if (!D.build) h += `<div class="card">${pill('NODATA', 'Not available')}<div class="small">The build report could not be read.</div></div>`;
     else {
       h += `<div class="small">Built ${fmt(D.build.generated_at)}</div>`;
       const bl = D.build.blockers || [];
@@ -313,15 +354,15 @@
     }
     if (D.conn && D.conn.stats) {
       const s = D.conn.stats;
-      h += `<h2>River connectivity</h2><div class="small">Reaches exported: ${esc(s.exported_reaches)}; lake links: ${esc(JSON.stringify(s.lake_links || {}))}; path ends: ${esc(JSON.stringify(s.path_end_reasons || {}))}. Downstream links come from ${esc((D.net && D.net.source_label) || 'HydroRIVERS (international dataset topology)')}.</div>`;
+      h += `<h2>River connectivity</h2><div class="small">Reaches exported: ${esc(s.exported_reaches)}; lake links: ${esc(JSON.stringify(s.lake_links || {}))}; path ends: ${esc(JSON.stringify(s.path_end_reasons || {}))}. Downstream links come from ${esc((D.net && D.net.source_label) || 'the river network dataset named in the source list')}. Lake-to-river links are nearest-reach (proximity) matches only.</div>`;
     }
     if (D.audit && D.audit.layers) {
       h += '<h2>Data audit</h2><table><tr><th>Layer</th><th>Features</th><th>Invalid</th><th>Dup IDs</th></tr>' +
         D.audit.layers.map(a => `<tr><td>${esc(a.layer)}</td><td>${esc(a.features)}</td><td>${esc(a.invalid_geometries)}</td><td>${esc(a.duplicate_id_rows)}</td></tr>`).join('') + '</table>';
     }
-    h += '<h2>Datasets and feeds</h2>';
+    h += '</details><h2>Datasets and feeds</h2>';
     const rows = (D.sources && D.sources.sources) || [];
-    if (!rows.length) h += `<div class="card">${pill('NODATA')}<div class="small">No provenance records yet.</div></div>`;
+    if (!rows.length) h += `<div class="card">${pill('NODATA', 'Not available')}<div class="small">No source records could be read.</div></div>`;
     rows.forEach(s => {
       h += `<div class="card"><h3>${esc(s.title || s.source_id)}</h3>
         <div>${s.authority === 'indian_government' ? pill('OFFICIAL', 'Indian government source') : '<span class="pill ev-nodata">International/open gap-filler</span>'}
@@ -358,8 +399,10 @@
   function startsFor(sig) {
     if (!G) return { starts: [], note: 'River network is not available.' };
     if (sig.type === 'lake') {
-      const r = sig.props.reach;
-      return r == null ? { starts: [], note: 'This lake has no river reach within 10 km in the network dataset, so no connection is computed.' } : { starts: [r] };
+      const r = sig.props.reach, ll = C.lakeLink(sig.props.quality, sig.props.snap_km);
+      if (r == null) return { starts: [], note: 'No mapped river reach lies within 10 km of this lake in the network data, so no river connection is shown.' };
+      if (!ll.trace) return { starts: [], note: 'The nearest mapped river reach is ' + sig.props.snap_km + ' km from this lake. That is too far to treat as a connection, so no downstream path is drawn. Nothing in the data shows where this lake drains.' };
+      return { starts: [r] };
     }
     const dids = sig.type === 'alert' ? sig.alert.districts : [sig.did];
     const starts = D.anchors ? C.entryReachesForDistricts(G, D.anchors, dids, 40) : [];
@@ -393,6 +436,14 @@
     renderChain();
   }
 
+  function methodNote() {
+    const o = D.conn && D.conn.stats && D.conn.stats.osm_network;
+    const forks = o && o.forks_resolved_by_rule != null ? Number(o.forks_resolved_by_rule).toLocaleString('en-IN') : null;
+    return 'Downstream direction comes from how volunteers drew each waterway in OpenStreetMap, not from a hydrological model or an official river map.'
+      + (forks ? ' Where a river forks (' + forks + ' forks in the network), a fixed rule picks one branch.' : '')
+      + ' Gaps and mis-drawn waterways can break or redirect a path.';
+  }
+
   function stepHtml(n, title, body, on) { return `<div class="step ${on ? 'on' : ''}" data-step="${n}"><h3><span class="n">${n}</span>${esc(title)}</h3>${body}</div>`; }
 
   function renderChain() {
@@ -417,13 +468,13 @@
     } else if (sig.type === 'lake') {
       const p = sig.props, si = sourceInfo('glacial_lakes_cwc');
       s1 = `<p><strong>${esc(p.name || 'Glacial lake ' + p.lid)}</strong>${p.state ? ', ' + esc(p.state) : ''}. Outline area ${p.area_ha_calc != null ? (+p.area_ha_calc).toFixed(1) + ' ha (calculated)' : 'unknown'}.</p>
-        <p>${pill('LATEST', 'Latest official update')}${pill('NODATA', 'No current data: lake change')}</p>
-        <p class="small">This is a location from the CWC glacial-lake inventory. Current lake change is only published in CWC's monthly PDF reports, which are not machine-readable, so no current change is shown.</p>
+        <p>${pill('LATEST', 'Historical inventory')}${pill('NODATA', 'Lake change: not published as data')}</p>
+        <p class="small">This is a mapped location from the CWC glacial-lake inventory, not a current observation. CWC reports lake change in monthly PDF bulletins that cannot be read automatically, so SHAILDHARA shows no current change for this lake.</p>
         ${prov({ source: 'CWC glacial lakes via NWDP', kind: 'STATIC inventory', dataDate: si && si.data_date, fetchedAt: si && si.retrieved_at, status: 'LATEST OFFICIAL' })}`;
     } else {
       const al = alertsByDistrict[sig.did] || [];
       s1 = al.length ? `<p>${al.length} current official alert(s) cover this district:</p><ul>${al.slice(0, 5).map(a => `<li>${esc(a.event || 'Alert')} (${esc(a.severity || '?')}, ${esc(a.sender || 'agency')})</li>`).join('')}</ul><p>${pill('OFFICIAL')}${pill('CURRENT')}</p>`
-        : `<p>${pill('NODATA', 'No current alert')} No unexpired official alert in the loaded feeds matches this district.</p><p class="small">The chain below shows connected rivers only. It is a map exercise, not a response to an event.</p>`;
+        : `<p>${pill('NODATA', 'No alert in effect')} None of the official alerts loaded at the last refresh covers this district.</p><p class="small">The chain below shows which rivers cross the district. It is a map exercise, not a response to an event.</p>`;
     }
     steps.push(stepHtml(1, 'What is changing', s1, true));
 
@@ -434,26 +485,25 @@
       s2 = `<p>${pill('OFFICIAL')} The agency's own wording (SHAILDHARA does not model what this event triggers):</p>
         <p class="small">${esc(a.description || a.headline || 'No description text in the alert.')}</p>${a.instruction ? `<p class="small">Instruction as issued: ${esc(a.instruction)}</p>` : ''}
         ${safeUrl(a.cap_url) ? `<p class="small"><a href="${esc(safeUrl(a.cap_url))}" target="_blank" rel="noopener">Original alert (CAP)</a></p>` : ''}`;
-    } else s2 = `<p>${pill('NODATA')} No current trigger information is available for this ${sig.type === 'lake' ? 'lake' : 'district'}. SHAILDHARA does not infer triggers.</p>`;
+    } else s2 = `<p>${pill('NODATA', 'Not inferred')} There is no official event attached to this ${sig.type === 'lake' ? 'lake' : 'district'}, and SHAILDHARA does not guess what might trigger one.</p>`;
     steps.push(stepHtml(2, 'What it could trigger', s2));
 
     // 3. water connection
     let s3;
-    if (!traced) s3 = `<p>${pill('NODATA')} ${esc(note || 'No connection could be computed.')}</p>`;
+    if (!traced) s3 = `<p>${pill('NODATA', 'No connection shown')} ${esc(note || 'No connection could be computed from the available data.')}</p>`;
     else if (sig.type === 'lake') {
-      const p = sig.props;
-      const q = { close: 'within 1 km', moderate: '1 to 5 km away', weak: '5 to 10 km away (weak link)' }[p.quality] || esc(p.quality);
-      s3 = `<p>${pill('COMPUTED')} Nearest river reach in the network dataset: <strong>${q}</strong> (${esc(p.snap_km)} km).</p>
-        <p class="small">The link is a nearest-reach match from map geometry. Rivers: ${sum.rivers.length ? esc(sum.rivers.slice(0, 4).join(', ')) : 'unnamed in the dataset'}.</p>`;
+      const p = sig.props, ll = C.lakeLink(p.quality, p.snap_km);
+      s3 = `<p>${pill('PROXIMITY')} ${esc(ll.text.charAt(0).toUpperCase() + ll.text.slice(1))} (${esc(p.snap_km)} km to the nearest reach).</p>
+        <p class="small"><strong>Drainage connection unverified.</strong> The river was chosen only because it is the closest one in the map data. The lake inventory does not say where the lake drains, and distance alone does not prove it. The dashed line on the map marks this gap. Rivers on the path: ${sum.rivers.length ? esc(sum.rivers.slice(0, 4).join(', ')) : 'unnamed in the dataset'}.</p>`;
     } else {
-      s3 = `<p>${pill('COMPUTED')} ${starts.length} large river reach(es) intersect the district${sig.type === 'alert' ? 's covered by the alert' : ''} (${esc((D.net && D.net.rank_label) || 'largest by modelled discharge')}).</p>
+      s3 = `<p>${pill('COMPUTED')} ${starts.length} mapped river reach(es) lie inside the district${sig.type === 'alert' ? 's covered by the alert' : ''} (chosen as the ${esc((D.net && D.net.rank_label) || 'largest by modelled discharge')}). This is geographic overlap with the district, not a link to the cause of the alert.</p>
         <p class="small">Rivers: ${sum.rivers.length ? esc(sum.rivers.slice(0, 6).join(', ')) : 'unnamed in the dataset'}. Reaches come from ${esc((D.net && D.net.method === 'osm_waterways') ? 'OpenStreetMap waterways' : 'HydroRIVERS')}; ${esc((D.net && D.net.caveat) || 'small streams are missing at this resolution')}.</p>`;
     }
     steps.push(stepHtml(3, 'Water / river / lake connection', s3));
 
     // 4. downstream pathway
     let s4;
-    if (!traced) s4 = `<p>${pill('NODATA')} No pathway.</p>`;
+    if (!traced) s4 = `<p>${pill('NODATA', 'No path drawn')} See the note in step 3.</p>`;
     else {
       const reasons = traced.reasons;
       const endText = reasons.terminal ? ((D.net && D.net.terminal_text) || 'reaches the end of the network (sea or inland sink)') : '';
@@ -462,34 +512,34 @@
       s4 = `<p>${pill('COMPUTED')}${maxKm ? pill('SCENARIO', 'Scenario horizon ' + maxKm + ' km') : ''}</p>
         <p>${Math.round(traced.totalKm).toLocaleString()} km of river reaches shown, ${sum.districts.length} district(s), ${new Set(sum.states).size} state(s). Path ${[endText, leave, hz].filter(Boolean).join('; ') || 'ends for an unrecorded reason'}.</p>
         <p class="small">Districts downstream (order of first contact, by reach midpoint, approximate): ${esc(sum.districts.slice(0, 14).map(d => d.n + (d.s ? ' (' + d.s + ')' : '')).join(' > ')) || 'none mapped'}${sum.districts.length > 14 ? ' ...' : ''}</p>
-        <p class="small">This is where the water network connects to, not where an event will go.</p>`;
+        <p class="small">This is where the mapped water network connects to, not where an event will go. ${esc(methodNote())}</p>`;
       const obs = (D.obs && D.obs.observations) || [];
       if (obs.length) {
         const near = C.stationsNearPath(G, traced.idx, obs, 5).slice(0, 8);
         s4 += near.length ? `<p class="small">${pill('OFFICIAL')} Official observations within 5 km of the path:</p><ul>${near.map(o => `<li>${esc(o.station)}: ${esc(o.parameter)} ${esc(o.value)} at ${fmt(o.observed_at)} ${C.freshness(o.observed_at, 24) === 'CURRENT' ? pill('CURRENT') : pill('LATEST', 'Older than 24 h')}</li>`).join('')}</ul>`
           : '<p class="small">No loaded official station lies within 5 km of this path.</p>';
-      } else s4 += `<p class="small">${pill('NODATA', 'No current river observations')} No NWDP/CWC station observations were extracted (see Sources).</p>`;
+      } else s4 += `<p class="small">${pill('NODATA', 'No station readings')} No NWDP/CWC station readings are loaded right now (details under Data &amp; Sources).</p>`;
     }
     steps.push(stepHtml(4, 'Downstream pathway', s4));
 
     // 5. exposure
     let s5;
-    if (!traced) s5 = `<p>${pill('NODATA')} No path, so no exposure is computed.</p>`;
+    if (!traced) s5 = `<p>${pill('NODATA', 'Not computed')} Without a path there is nothing to measure along.</p>`;
     else {
       const rows = expo.map(e => `<tr><td>${esc(e.label || e.key)}</td><td>${e.total == null ? pill('NODATA') : esc(Math.round(e.total).toLocaleString()) + ' ' + esc(e.unit || '')}</td><td>${e.covered}/${e.of}</td></tr>`).join('');
       const un = ((D.expo && D.expo.unavailable) || []).map(u => `<li class="small">${esc(u.key)}: ${esc(u.reason)}</li>`).join('');
       s5 = `<p>${pill('COMPUTED')} Assets lying within ${D.expo ? D.expo.corridor_m / 1000 : 2} km of the traced river reaches (spatial association only).</p>
         ${rows ? `<table><tr><th>Layer</th><th>Total</th><th>Reaches covered</th></tr>${rows}</table>` : `<p>${pill('NODATA')} No exposure layer has been built yet.</p>`}
         ${un ? `<p class="small">Not available:</p><ul>${un}</ul>` : ''}
-        <p class="small">Missing coverage is shown as No current data, never as zero. Population is modelled, OpenStreetMap is crowd-sourced, and land cover depends on the tiles supplied. ${expo.length ? '' : ''}</p>
+        <p class="small">Where a layer has no coverage it is marked Not available, never counted as zero. Population is modelled, OpenStreetMap is crowd-sourced, and land cover depends on the tiles supplied. ${expo.length ? '' : ''}</p>
         ${expo.map(e => `<div class="prov">${esc(e.label)}: ${esc(e.dataset || '')}. ${esc(e.caveats || '')}</div>`).join('')}`;
     }
     steps.push(stepHtml(5, 'Current exposure along the path', s5));
 
     // 6. consequences
     steps.push(stepHtml(6, 'Potential economic / ecological consequences',
-      `<p>${pill('NODATA', 'No current data: not quantified')}</p>
-       <p class="small">SHAILDHARA does not estimate economic or ecological loss. No reliable current source exists for it. The exposure above lists what is located near the river. Whether anything is affected depends on the real event and must be judged by the responsible authorities.</p>`));
+      `<p>${pill('NODATA', 'Not quantified')}</p>
+       <p class="small">SHAILDHARA does not estimate economic or ecological loss, because no validated source exists to do it honestly. The exposure above lists what is located near the river. Whether anything is affected depends on the real event and is for the responsible authorities to judge.</p>`));
 
     // 7. investigate
     const rv = traced && sum.rivers.length ? sum.rivers.slice(0, 3).join(', ') : 'the rivers shown on the map';
@@ -541,7 +591,15 @@
     setTimeout(() => {
       if (token !== anim.token) return;
       setStep(3);
-      starts.forEach(r => { const c = G.coords[r]; if (c && c.length > 1) L.polyline(c.map(p => [p[1], p[0]]), { color: '#ff6f00', weight: 5, opacity: .95 }).addTo(chainGroup); });
+      starts.forEach(r => {
+        const c = G.coords[r]; if (!c || c.length < 2) return;
+        L.polyline(c.map(p => [p[1], p[0]]), { color: '#ff6f00', weight: 5, opacity: .95 }).addTo(chainGroup);
+        if (sig.type === 'lake') {   // the lake-to-river gap is proximity only: draw it dashed so it is never mistaken for a confirmed channel
+          let best = null, bd = Infinity;
+          c.forEach(pt => { const d = C.haversineKm(sig.lat, sig.lon, pt[1], pt[0]); if (d < bd) { bd = d; best = pt; } });
+          if (best) L.polyline([[sig.lat, sig.lon], [best[1], best[0]]], { color: '#6d4c9f', weight: 2.5, dashArray: '6 6', opacity: .95, interactive: false }).addTo(chainGroup);
+        }
+      });
       setTimeout(() => {
         if (token !== anim.token) return;
         setStep(4);

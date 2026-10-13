@@ -17,8 +17,9 @@ statement with how it is known.
 | `data/manual/` | Drop-in folders for files that cannot be downloaded automatically |
 | `tests/` | Developer tests. They use throwaway fictional fixtures in a temporary folder and never touch `web/data/` |
 
-`web/data/` is **empty on purpose**. The site shows "No data has been built yet" until you run the pipeline. Nothing is
-pre-filled, so nothing can be mistaken for real data.
+`web/data/` holds the committed build produced by the pipeline (boundaries, glacial lakes, river network, exposure, live status). Nothing
+in it is hand-written: if a file is missing the site says so instead of filling the gap. The static layers are snapshots; only
+`web/data/live/` is refreshed on a schedule.
 
 ## Option A (fastest, recommended): Colab notebook + Netlify Drop
 
@@ -47,23 +48,40 @@ GitHub's servers. If the Sources tab shows BLOCKED, use Option A. Add the IMD ke
 | IMD API | **Blocked until you add `IMD_API_KEY`.** IMD also describes IP whitelisting: if calls return 401/403 with a valid key, ask IMD's nodal officer to whitelist the machine |
 | Population (WorldPop), OpenStreetMap | Heavy; run with `--heavy`. Candidate URLs, unverified. Or place files in `data/manual/...` |
 | Land cover, protected areas/wetlands | Manual files in `data/manual/landcover/` and `data/manual/ecosystems/` |
-| CWC monthly glacial-lake PDFs | Manual (PDF); the interface says "No current data" for current lake change |
+| CWC monthly glacial-lake PDFs | Manual (PDF); the interface says current lake change is "not published as data" |
 | CWC flood portals (FFS/AFF), India-WRIS WMS | Not used: robots/auth blocked or unreachable in your test |
 | Census 2011 villages, official Indian basin boundaries (25 basins / 101 sub-basins) | No verified download; not used |
 
 ## Evidence labels (shown on every card)
 
 **Official** (issued by a government agency) - **Current** (within the freshness window) - **Latest official update**
-(newest official version, not live) - **Computed spatial connection** (calculated from map geometry) - **Scenario**
-(a user-chosen setting such as the display horizon) - **No current data**.
+(newest official version, not live) - **Computed spatial connection** (calculated from map geometry) - **Nearest mapped river
+(unverified)** (a lake matched to the closest river only; drainage not confirmed) - **Scenario** (a user-chosen setting such as the
+display horizon) - **Not available** (no reliable machine-readable information exists; shown as blank, never estimated).
+
+## What SHOW ME THE CHAIN does and does not claim
+
+* **Alert or district start:** the chain takes mapped river reaches that lie inside the district(s). That is geographic overlap, not a
+  statement about what caused the alert.
+* **Glacial-lake start:** the lake is joined to the *nearest* mapped river reach. Nothing in the CWC inventory says where a lake drains,
+  so this is always a proximity candidate, labelled "Drainage connection unverified" and drawn with a dashed line. Links of 5 km or
+  more are **not traced at all** (the interface explains why); lakes with no reach within 10 km show no connection.
+* **Downstream path:** follows the drawing direction of OpenStreetMap waterways. It is not a hydrological model, not an official river
+  map and not a flow, arrival-time or inundation forecast. Where a river forks, a fixed rule picks one branch; the count of such forks
+  is shown in the interface. Gaps or mis-drawn waterways can break a path.
+* **Exposure:** what lies within a 2 km corridor of the traced reaches. Not damage, not risk, not people affected.
 
 ## Honest limits
 
 * River links use HydroRIVERS (about 500 m source resolution, modelled discharge). Small Himalayan streams are missing.
 * Exposure is *what lies near the traced river* (2 km corridor), not damage. Missing datasets are shown as No data, never as zero.
 * State/district outlines come from the NWIC portal and are not confirmed as the legal external boundary of India.
-* Not yet tested against the real government servers: the first run in Colab is the real test. Read `web/data/build_status.json`
-  (also shown in the Sources tab) for every blocker and the exact next action.
+* Live government feeds are exercised by the scheduled GitHub workflow (Actions > Refresh live data), not by the developer tests. Read
+  `web/data/build_status.json` (also shown under Data & Sources) for every blocker and the exact next action.
+* Static layers (boundaries, lakes, river lines, exposure) are dated snapshots. The interface shows which rows are a live feed and
+  which are snapshots, with their data dates and last-checked times.
+* Station readings come from the NWDP/CWC datasets that are machine-readable; coverage is partial, and the newest reading can be
+  days old. The interface labels them "latest official update", never "live".
 
 ## Deploy check
 
@@ -82,6 +100,12 @@ node tests/test_chain.js <web/data folder built by that test>
 HydroSHEDS refuses automated downloads (HTTP 403), and automated access is not worked around. Download the file in a browser, then on GitHub:
 Releases > Draft a new release > tag `data-v1` > attach the file (HydroRIVERS_v10_as_shp.zip, ind_ppp_*.tif, *.osm.pbf, ... - routed by file name,
 see `tools/stage_release_files.py`) > Publish release. The next build picks it up automatically.
+
+## What the scheduled refresh changes
+
+`refresh-live.yml` (every 3 hours) commits only `web/data/live/`, `web/data/build_status.json`, `web/data/sources.json` and
+`web/data/coverage.json`. It never edits website code or the static layers. Its own time budget is 18 minutes (`live_total_seconds` in
+`config/live_sources.json`) with a 22-minute step limit and 30-minute job limit; JSON files are written atomically and checked before commit.
 
 ## Secrets (never paste keys into chat or files)
 

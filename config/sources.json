@@ -49,7 +49,7 @@
       "filename": "HydroRIVERS_v10_as_shp.zip", "format": "Shapefile in ZIP", "data_date": "v1.0 (file name)",
       "coverage": "Asia; selected where touching India", "authority": "international_open",
       "licence": "HydroSHEDS licence agreement: free with attribution (read it on hydrosheds.org)",
-      "limitations": "Built from ~500 m terrain data: small Himalayan streams are missing; discharge values are MODELLED long-term averages. Candidate URL unverified: the pipeline records whether it worked."
+      "limitations": "NOT USED in the current build: the host's robots.txt refuses automated downloads, so this dataset was not loaded. River links come from OpenStreetMap waterways instead (see that entry). If loaded by hand it is ~500 m resolution, small Himalayan streams are missing, and discharge is MODELLED."
     },
     {
       "id": "hydrobasins_asia", "title": "HydroBASINS - Asia (basin hierarchy)",
@@ -68,7 +68,7 @@
       "filename": "ind_ppp_2020_1km_Aggregated.tif", "format": "GeoTIFF", "data_date": "2020 (modelled)",
       "coverage": "India", "authority": "international_open", "heavy": true,
       "licence": "WorldPop open licence (CC BY 4.0 per WorldPop; verify on the download page)",
-      "limitations": "Modelled estimate, not a census. Candidate URL unverified."
+      "limitations": "Modelled estimate, not a census. The download URL worked in the last build (see URL status)."
     },
     {
       "id": "osm_india", "title": "OpenStreetMap India extract (places, roads, bridges, dams)",
@@ -78,7 +78,7 @@
       "filename": "india-latest.osm.pbf", "format": "OSM PBF", "data_date": "latest at download",
       "coverage": "India", "authority": "international_open", "heavy": true,
       "licence": "ODbL: attribution and share-alike apply to derived databases",
-      "limitations": "Crowd-sourced: incomplete in mountain areas, bridge tagging uneven. Candidate URL unverified."
+      "limitations": "Crowd-sourced: incomplete in mountain areas, bridge tagging uneven. The download URL worked in the last build (see URL status)."
     },
     {
       "id": "landcover", "title": "Land cover (ESA WorldCover 10 m tiles or NRSC Bhuvan LULC)",

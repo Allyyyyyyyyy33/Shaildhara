@@ -27,6 +27,18 @@ console.log('     path end reasons:', JSON.stringify(reasons));
 ok(empty === 0, 'no lake produces an empty path');
 ok(!reasons.unknown, 'every path ends with a recorded reason (none unknown)');
 
+
+// lake links on the real data: how many may be traced, and the policy never traces a link over 5 km
+const policy = { traceable: 0, refused: 0, bad: 0 };
+for (const f of lakes.features) {
+  const q = f.properties.quality, km = f.properties.snap_km, ll = C.lakeLink(q, km);
+  ll.trace ? policy.traceable++ : policy.refused++;
+  if (ll.trace && (km == null || km > 5)) policy.bad++;
+}
+console.log('     lake link policy on real data:', JSON.stringify(policy));
+ok(policy.bad === 0, 'no lake link longer than 5 km (or without a distance) is ever traced');
+ok(policy.traceable + policy.refused === lakes.features.length, 'every lake is either traceable as a proximity candidate or explicitly refused');
+
 // one concrete, verifiable demonstration: the lake whose path crosses the most districts
 let best = null;
 for (const f of linked) {
