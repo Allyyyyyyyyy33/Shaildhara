@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-19T13:19:32+00:00",
+ "generated_at": "2026-10-19T20:49:36+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -532,7 +532,7 @@
    "status": "BLOCKED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-19T13:04:19+00:00",
+   "fetched_at": "2026-10-19T20:34:22+00:00",
    "detail": "No SACHET feed could be read. Add working feed URLs from your endpoint test to config/live_sources.json (sachet.feeds). The last successfully read alerts are kept unchanged and keep their own refresh time."
   },
   {
@@ -540,7 +540,7 @@
    "status": "OK",
    "records": 30,
    "data_date": "2026-10-17T23:00:00+00:00",
-   "fetched_at": "2026-10-19T13:04:20+00:00",
+   "fetched_at": "2026-10-19T20:34:23+00:00",
    "detail": "30 station observation(s) from 70 recently updated dataset(s)"
   },
   {
@@ -548,7 +548,7 @@
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-19T13:19:32+00:00",
+   "fetched_at": "2026-10-19T20:49:36+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-19T13:19:32+00:00",
+   "fetched_at": "2026-10-19T20:49:36+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
