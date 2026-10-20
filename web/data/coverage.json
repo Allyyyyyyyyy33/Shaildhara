@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-20T00:33:29+00:00",
+ "generated_at": "2026-10-20T08:31:10+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -11,8 +11,8 @@
   "river_reaches_total": 261790,
   "river_reaches_exported": 9469,
   "districts_with_river": 724,
-  "alerts_in_file": 9,
-  "alerts_unexpired": 0,
+  "alerts_in_file": 10,
+  "alerts_unexpired": 10,
   "alerts_unmatched": 1,
   "stations": 30,
   "observations": 30,
@@ -22,10 +22,10 @@
    "ecosystems"
   ],
   "live_feeds_ok": [
-   "nwdp_cwc"
+   "sachet"
   ],
   "live_feeds_not_working": [
-   "sachet",
+   "nwdp_cwc",
    "imd",
    "imd_geoserver"
   ]
@@ -69,7 +69,7 @@
    "glacial_lakes": 0,
    "river_reaches": 340,
    "stations": 0,
-   "active_alerts": 0
+   "active_alerts": 1
   },
   {
    "name": "Chhattisgarh",
@@ -239,7 +239,7 @@
    "glacial_lakes": 0,
    "river_reaches": 262,
    "stations": 0,
-   "active_alerts": 0
+   "active_alerts": 3
   },
   {
    "name": "Sikkim",
@@ -259,7 +259,7 @@
    "glacial_lakes": 0,
    "river_reaches": 243,
    "stations": 0,
-   "active_alerts": 0
+   "active_alerts": 2
   },
   {
    "name": "Telangana",
@@ -269,7 +269,7 @@
    "glacial_lakes": 0,
    "river_reaches": 260,
    "stations": 1,
-   "active_alerts": 0
+   "active_alerts": 1
   },
   {
    "name": "Tripura",
@@ -389,7 +389,7 @@
    "glacial_lakes": 0,
    "river_reaches": 15,
    "stations": 0,
-   "active_alerts": 0
+   "active_alerts": 2
   }
  ],
  "layers": [
@@ -440,22 +440,22 @@
   {
    "id": "sachet",
    "label": "NDMA SACHET official alerts (CAP)",
-   "category": "BLOCKED",
+   "category": "AVAILABLE_VERIFIED",
    "update": "live",
-   "records": 9,
-   "source_status": "BLOCKED",
-   "data_date": null,
-   "source_url": "https://sachet.ndma.gov.in",
-   "note": "0 unexpired at build time; district matching by area name (lower confidence) or polygon."
+   "records": 10,
+   "source_status": "OK",
+   "data_date": "2026-10-20T13:54:15+05:30",
+   "source_url": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
+   "note": "10 unexpired at build time; district matching by area name (lower confidence) or polygon."
   },
   {
    "id": "nwdp_telemetry",
    "label": "CWC / NWDP station readings",
-   "category": "AVAILABLE_INCOMPLETE",
+   "category": "BLOCKED",
    "update": "periodic",
    "records": 30,
-   "source_status": "OK",
-   "data_date": "2026-10-17T23:00:00+00:00",
+   "source_status": "BLOCKED",
+   "data_date": null,
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
    "note": "30 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
@@ -529,26 +529,26 @@
  "feeds": [
   {
    "id": "sachet",
-   "status": "BLOCKED",
-   "records": 0,
-   "data_date": null,
-   "fetched_at": "2026-10-20T00:18:15+00:00",
-   "detail": "No SACHET feed could be read. Add working feed URLs from your endpoint test to config/live_sources.json (sachet.feeds). The last successfully read alerts are kept unchanged and keep their own refresh time."
+   "status": "OK",
+   "records": 10,
+   "data_date": "2026-10-20T13:54:15+05:30",
+   "fetched_at": "2026-10-20T08:27:05+00:00",
+   "detail": "10 current alert(s) from 12 feed(s)"
   },
   {
    "id": "nwdp_cwc",
-   "status": "OK",
-   "records": 30,
-   "data_date": "2026-10-17T23:00:00+00:00",
-   "fetched_at": "2026-10-20T00:18:15+00:00",
-   "detail": "30 station observation(s) from 68 recently updated dataset(s)"
+   "status": "BLOCKED",
+   "records": 0,
+   "data_date": null,
+   "fetched_at": "2026-10-20T08:31:07+00:00",
+   "detail": "NWDP search API returned nothing usable. river water level: Could not reach the server: ConnectionError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by NameResolutionError(\"HTTP"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-20T00:33:28+00:00",
+   "fetched_at": "2026-10-20T08:31:10+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-20T00:33:28+00:00",
+   "fetched_at": "2026-10-20T08:31:10+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
