@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SHAILDHARA - From the Peak to the People</title>
+  <meta name="shaildhara-build" content="2026-10-24-r6">
+  <meta name="description" content="India-wide environmental evidence platform: official signals traced to mapped rivers and what lies along them. Not a forecast.">
+  <meta name="theme-color" content="#0a1f2e">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<noscript><div class="banner err">SHAILDHARA needs JavaScript to draw the map. The data files are plain JSON in the <code>data/</code> folder.</div></noscript>
+<a class="skip" href="#left">Skip to controls</a>
+<header id="top">
+  <div class="brand">
+    <h1>SHAILDHARA</h1>
+    <span class="tag">From the Peak to the People</span>
+  </div>
+  <div id="top-status" aria-live="polite"></div>
+  <details id="keybox" class="keybox" open><summary>How to read the labels</summary><div class="legend" id="legend" aria-label="Evidence labels"></div></details>
+</header>
+
+<div id="banner" class="banner" hidden></div>
+
+<main id="layout">
+  <aside id="left" aria-label="Controls">
+    <nav class="tabs" role="tablist" aria-label="Panels">
+      <button class="tab active" data-tab="signals" role="tab" aria-controls="tab-signals" aria-selected="true">Signals</button>
+      <button class="tab" data-tab="layers" role="tab" aria-controls="tab-layers" aria-selected="false">Layers</button>
+      <button class="tab" data-tab="search" role="tab" aria-controls="tab-search" aria-selected="false">Search</button>
+      <button class="tab" data-tab="sources" role="tab" aria-controls="tab-sources" aria-selected="false">Data &amp; Sources</button>
+      <button class="tab" data-tab="coverage" role="tab" aria-controls="tab-coverage" aria-selected="false">Coverage &amp; limits</button>
+    </nav>
+    <section id="tab-signals" class="tabpane active"></section>
+    <section id="tab-layers" class="tabpane"></section>
+    <section id="tab-search" class="tabpane">
+      <input id="q" type="search" placeholder="Search districts, states, glacial lakes, alerts..." autocomplete="off" aria-label="Search">
+      <div id="results"></div>
+    </section>
+    <section id="tab-sources" class="tabpane"></section>
+    <section id="tab-coverage" class="tabpane"></section>
+  </aside>
+
+  <section id="mapwrap">
+    <div id="map" role="application" aria-label="India map"></div>
+    <div id="loading" class="loading" role="status"><span class="spinner" aria-hidden="true"></span>Loading national data&hellip;</div>
+  </section>
+  <aside id="chainpanel" hidden aria-label="Chain" tabindex="-1"></aside>
+</main>
+
+<footer>
+  SHAILDHARA connects and explains available evidence. It does <strong>not</strong> predict disasters, floods, landslides or losses.
+  Official forecasts and warnings remain the responsibility of the issuing agencies and are shown exactly as issued.
+  Map outlines are for analysis and are not an official map of India.
+  <span class="build">Build 2026-10-24-r6 &middot; <a href="https://github.com/Allyyyyyyyyy33/Shaildhara">source</a></span>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="chain.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
