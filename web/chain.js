@@ -132,6 +132,9 @@
 
   // A source-reported reading that cannot be physical is flagged, never silently trusted or silently altered.
   function obsFlag(o) {
+    if (o && /rain/i.test(o.parameter || '') && Number(o.value) < 0) {
+      return 'Negative rainfall is physically impossible: treat as a source data error, not a reading';
+    }
     if (o && /rain/i.test(o.parameter || '') && /hour/i.test(o.parameter || '') && Number(o.value) > 300) {
       return 'Exceeds any plausible hourly rainfall (over 300 mm): treat as unverified';
     }
@@ -184,5 +187,53 @@
     return out;
   }
 
-  return { LABELS, lakeLink, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath };
+  // ---- rainfall evidence for an alert: official rainfall readings inside / near the alerted districts (no modelling)
+  function ringContains(ring, x, y) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+      if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+  }
+  function polygonContains(poly, x, y) {
+    if (!poly || !poly.length || !ringContains(poly[0], x, y)) return false;
+    for (let k = 1; k < poly.length; k++) if (ringContains(poly[k], x, y)) return false;   // inside a hole
+    return true;
+  }
+  function geometryContains(geom, lon, lat) {
+    if (!geom) return false;
+    if (geom.type === 'Polygon') return polygonContains(geom.coordinates, lon, lat);
+    if (geom.type === 'MultiPolygon') return geom.coordinates.some(p => polygonContains(p, lon, lat));
+    return false;
+  }
+  function segKm(lat, lon, a, b) {            // distance from a point to one outline edge (a, b are [lon, lat]), local flat approximation
+    const k = Math.cos(lat * Math.PI / 180);
+    const ax = (a[0] - lon) * k, ay = a[1] - lat, bx = (b[0] - lon) * k, by = b[1] - lat;
+    const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;
+    let t = len2 ? (-(ax * dx + ay * dy)) / len2 : 0; t = Math.max(0, Math.min(1, t));
+    const cx = ax + t * dx, cy = ay + t * dy;
+    return Math.sqrt(cx * cx + cy * cy) * 111.195;
+  }
+  function minEdgeKm(geom, lat, lon) {         // approximate distance to the nearest point on the area's outline
+    const polys = !geom ? [] : geom.type === 'Polygon' ? [geom.coordinates] : geom.type === 'MultiPolygon' ? geom.coordinates : [];
+    let best = Infinity;
+    for (const p of polys) for (const ring of p) for (let i = 1; i < ring.length; i++) { const d = segKm(lat, lon, ring[i - 1], ring[i]); if (d < best) best = d; }
+    return best;
+  }
+  function rainfallEvidence(stations, geoms, maxKm) {
+    const rain = (stations || []).filter(o => o && /rain/i.test(o.parameter || '') && Number.isFinite(o.lat) && Number.isFinite(o.lon) && Number.isFinite(o.value));
+    const inside = [], near = [];
+    for (const s of rain) {
+      if (geoms.some(g => geometryContains(g, s.lon, s.lat))) { inside.push({ ...s, distKm: 0 }); continue; }
+      let best = Infinity;
+      for (const g of geoms) { const d = minEdgeKm(g, s.lat, s.lon); if (d < best) best = d; }
+      if (best <= maxKm) near.push({ ...s, distKm: best });
+    }
+    const byNewest = (a, b) => Date.parse(b.observed_at || 0) - Date.parse(a.observed_at || 0);
+    inside.sort(byNewest); near.sort((a, b) => a.distKm - b.distKm);
+    return { inside, near, rainStationsTotal: rain.length };
+  }
+
+  return { LABELS, lakeLink, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath, geometryContains, rainfallEvidence };
 });

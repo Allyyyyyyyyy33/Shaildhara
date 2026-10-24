@@ -9,6 +9,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const safeUrl = u => (/^https?:\/\//i.test(u || '') ? u : '');
   const MATCH_LABEL = { POLYGON: 'by alert polygon', NAME_MATCH: 'by area name, lower confidence',
+    NAME_AND_FUZZY_MATCH: 'by area name, plus spelling variants of district names within the alert\'s state, lower confidence - please check',
     FUZZY_NAME_MATCH: 'by approximate spelling of the district name within the alert\'s state, lower confidence - please check',
     TEXT_NAME_MATCH: 'by district names found in the alert text within its state, lower confidence - please check' };
   const SEV_COLOR = { 4: '#b71c1c', 3: '#e65100', 2: '#f9a825', 1: '#fdd835' };
@@ -81,11 +82,14 @@
   // ---------------------------------------------------------------- derived data
   function sourceInfo(id) { return ((D.sources && D.sources.sources) || []).find(s => s.dataset_id === id || s.source_id === id) || null; }
   const alertList = () => (D.alerts && D.alerts.alerts) || [];
+  let alertFilter = 'ALL';                       // which alert type the Signals list and the map colouring show
+  const eventOf = a => (a && a.event) || 'Alert';
+  const passesFilter = a => alertFilter === 'ALL' || eventOf(a) === alertFilter;
   function indexAlerts() {
     sevByDistrict = {}; alertsByDistrict = {};
     alertList().forEach(a => (a.districts || []).forEach(d => {
       (alertsByDistrict[d] = alertsByDistrict[d] || []).push(a);
-      sevByDistrict[d] = Math.max(sevByDistrict[d] || 0, C.severityRank(a.severity));
+      if (passesFilter(a)) sevByDistrict[d] = Math.max(sevByDistrict[d] || 0, C.severityRank(a.severity));
     }));
   }
 
@@ -187,13 +191,79 @@
     $('#legend').innerHTML = ['OFFICIAL', 'CURRENT', 'LATEST', 'COMPUTED', 'PROXIMITY', 'SCENARIO', 'NODATA'].map(k => pill(k)).join('');
   }
 
+  // ---------------------------------------------------------------- alert helpers
+  const normName = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  let _distNames = null;
+  function districtNameIndex() {
+    if (_distNames) return _distNames;
+    _distNames = {};
+    ((D.districts && D.districts.features) || []).forEach(f => { const n = normName(f.properties.name); if (n.length >= 5) (_distNames[n] = _distNames[n] || []).push(f.properties); });
+    return _distNames;
+  }
+  // Districts the alert's headline/description names but its official area list did not match. Only names that are unique in India count.
+  function headlineExtraDistricts(a) {
+    const text = ' ' + normName([a.headline, a.description].join(' ')) + ' ';
+    const have = new Set(a.districts || []), idx = districtNameIndex(), out = [];
+    for (const n in idx) if (idx[n].length === 1 && text.includes(' ' + n + ' ') && !have.has(idx[n][0].did)) out.push(idx[n][0]);
+    return out;
+  }
+  function extraNote(a) {
+    const ex = headlineExtraDistricts(a);
+    if (!ex.length) return '';
+    const areaText = ' ' + normName((a.areas || []).join(' ')) + ' ';
+    const inArea = ex.filter(d => areaText.includes(' ' + normName(d.name) + ' '));
+    const onlyHead = ex.filter(d => !inArea.includes(d));
+    const list = l => l.slice(0, 12).map(d => d.name + (d.state ? ' (' + d.state + ')' : '')).join(', ') + (l.length > 12 ? ' ...' : '');
+    const parts = [];
+    if (inArea.length) parts.push(`the alert's area text lists ${list(inArea)}, but SHAILDHARA could not match ${inArea.length > 1 ? 'these' : 'this'} to a district outline (a spelling or naming difference)`);
+    if (onlyHead.length) parts.push(`the headline also names ${list(onlyHead)}, which the alert's official area list does not include`);
+    const have = (a.districts || []).map(d => (districtById[d] ? districtById[d].f.properties.name : d)).slice(0, 6).join(', ');
+    return `Note: ${parts.join('; and ')}. Districts that were matched: ${have || 'none'}. SHAILDHARA does not guess, so only matched districts are used. Please read the original alert.`;
+  }
+  function rainEvidenceHtml(a) {
+    if (!/rain/i.test((a.event || '') + ' ' + (a.headline || ''))) return '';
+    const obs = (D.obs && D.obs.observations) || [];
+    const geoms = (a.districts || []).map(d => districtById[d]).filter(Boolean).map(d => d.f.geometry);
+    let h = `<div class="evid"><p><strong>Observed rainfall evidence</strong> ${pill('OFFICIAL')}</p>`;
+    if (!geoms.length) return h + `<p class="small">${pill('NODATA')} No district could be matched to this alert, so no station can be checked.</p></div>`;
+    const ev = C.rainfallEvidence(obs, geoms, 100);
+    const li = o => `<li>${esc(o.station)}: ${esc(o.value)} mm, hourly reading at ${fmt(o.observed_at)} (${esc(ago(o.observed_at))}) ${C.freshness(o.observed_at, 24) === 'CURRENT' ? pill('CURRENT') : pill('LATEST', 'Older than 24 h')}${o.distKm > 0 ? ' &middot; about ' + Math.round(o.distKm) + ' km from the alerted area' : ''}${C.obsFlag(o) ? ` <span class="reason warn">${esc(C.obsFlag(o))}</span>` : ''}</li>`;
+    if (ev.inside.length) h += `<p class="small">Rainfall stations inside the alerted districts (CWC/NWDP):</p><ul>${ev.inside.slice(0, 4).map(li).join('')}</ul>`;
+    else if (ev.near.length) h += `<p class="small">No loaded rainfall station is inside the alerted districts. Nearest within 100 km:</p><ul>${ev.near.slice(0, 3).map(li).join('')}</ul>`;
+    else h += `<p class="small">${pill('NODATA', 'No station nearby')} No loaded rainfall station is inside, or within 100 km of, the alerted districts. This does not mean no rain fell: only ${ev.rainStationsTotal} rainfall station(s) are loaded for the whole country.</p>`;
+    return h + `<p class="small">These are single hourly readings from a partial set of stations and can be days old. They are not a daily rainfall total, and they neither confirm nor contradict the alert. Rainfall categories (Heavy, Very Heavy) are defined and issued by IMD.</p></div>`;
+  }
+  function overviewHtml() {
+    const al = alertList();
+    if (!D.alerts || !al.length) return '';
+    const stateSet = new Set();
+    al.forEach(a => (a.districts || []).forEach(d => { const x = districtById[d]; if (x && x.f.properties.state) stateSet.add(x.f.properties.state); }));
+    const isRain = a => /rain/i.test((a.event || '') + ' ' + (a.headline || ''));
+    const counts = {}; al.forEach(a => { counts[eventOf(a)] = (counts[eventOf(a)] || 0) + 1; });
+    const fixed = ['Very Heavy Rain', 'Heavy Rain'];
+    const others = Object.keys(counts).filter(k => !fixed.includes(k)).sort((x, y) => counts[y] - counts[x]);
+    const btn = (key, label, n) => `<button class="sm filt${alertFilter === key ? ' on' : ''}" data-alert-filter="${esc(key)}" aria-pressed="${alertFilter === key}" ${n === 0 ? 'disabled' : ''}>${esc(label)} (${n})</button>`;
+    const states = Array.from(stateSet).sort();
+    return `<div class="card overview"><h3>National overview</h3>
+      <div class="stats"><div class="stat"><b>${al.length}</b><span>alerts in effect</span></div><div class="stat"><b>${stateSet.size}</b><span>states / UTs</span></div><div class="stat"><b>${al.filter(isRain).length}</b><span>rain alerts</span></div><div class="stat"><b>${al.filter(a => C.severityRank(a.severity) >= 3).length}</b><span>Severe or higher</span></div></div>
+      <div class="small">States / UTs with alerts: ${states.length ? esc(states.join(', ')) : 'none matched'}</div>
+      <div class="small" style="margin-top:6px">Show only:</div>
+      <div class="row" id="alert-filters">${btn('ALL', 'All', al.length)}${fixed.map(k => btn(k, k, counts[k] || 0)).join('')}${others.map(k => btn(k, k, counts[k])).join('')}</div>
+      <div class="small">${pill('OFFICIAL')} The map colours districts by the alerts being shown. These are counts of alerts, not storms: the same weather can appear in alerts from several agencies. States come from the districts each alert was matched to, so areas that could not be matched are missed. Severity is as written by the issuing agency.</div></div>`;
+  }
+  function setAlertFilter(k) {
+    alertFilter = k; indexAlerts(); restyleDistricts();
+    const left = $('#left'), top = left ? left.scrollTop : 0;
+    renderSignals(); if (left) left.scrollTop = top;
+  }
+
   // ---------------------------------------------------------------- signals tab
   function alertCard(a, i) {
     const sev = C.severityRank(a.severity);
     const entry = G && D.anchors ? C.entryReachesForDistricts(G, D.anchors, a.districts, 40) : [];
     const can = entry.length > 0;
     const why = !a.districts.length ? 'No district could be matched to this alert, so no river connection can be computed.'
-      : !G ? 'River network not built yet (see Sources).' : (!can ? 'No river reaches found in the alerted districts.' : '');
+      : !G ? 'River network not built yet (see Sources).' : (!can ? (extraNote(a) ? 'No mapped river reaches were found in the districts of the official area list.' : 'No river reaches found in the alerted districts.') : '');
     const status = C.alertActive(a) ? 'CURRENT' : 'STALE';
     return `<div class="card" data-alert="${i}">
       <h3>${esc(a.event || a.headline || 'Alert')}</h3>
@@ -204,6 +274,7 @@
       <div class="meta">Districts matched: ${a.districts.length}${a.districts_stated ? ' of ' + a.districts_stated + ' stated' : ''} (${esc(MATCH_LABEL[a.match_method] || a.match_method)})</div>
       <button class="chain-btn" data-chain-alert="${i}" ${can ? '' : 'disabled'}>SHOW ME THE CHAIN</button>
       ${why ? `<div class="reason">${esc(why)}</div>` : ''}
+      ${extraNote(a) ? `<div class="reason warn">${esc(extraNote(a))}</div>` : ''}
       ${prov({ source: 'NDMA SACHET (' + (a.sender || 'issuing agency') + ')', kind: 'WARNING (official, as issued)', dataDate: a.sent, fetchedAt: D.alerts.generated_at, status: 'CURRENT' })}
     </div>`;
   }
@@ -226,7 +297,7 @@
   function renderSignals() {
     const el = $('#tab-signals');
     const al = alertList();
-    let h = '<h2>Current official alerts</h2>';
+    let h = '<h2>Current official alerts</h2>' + overviewHtml();
     const ss = D.live && D.live.sources && D.live.sources.sachet;
     if (D.alerts && ss && (ss.status === 'BLOCKED' || ss.status === 'ERROR')) {
       h += `<div class="card">${pill('LATEST')}<div class="small"><b>The official alert feed could not be read in the latest refresh.</b> Alerts shown are from the last successful read (${esc(fmt(D.alerts.generated_at))}) and may have been updated or cancelled since. Check sachet.ndma.gov.in for the live position.</div></div>`;
@@ -235,7 +306,8 @@
     else if (!al.length) h += `<div class="card">${pill('CURRENT', 'No alerts in effect')}<div class="small">No unexpired alerts in the feeds read at ${fmt(D.alerts.generated_at)}${D.alerts.expired_since_refresh ? ' (' + D.alerts.expired_since_refresh + ' alert(s) in that file have since expired and are hidden)' : ''}. This usually means a quiet period; if a feed was unreachable, the source status below says so.</div></div>`;
     else {
       if (D.alerts.expired_since_refresh) h += `<div class="small">${D.alerts.expired_since_refresh} alert(s) from the ${fmt(D.alerts.generated_at)} refresh have expired and are hidden.</div>`;
-      const order = al.map((a, i) => i).sort((x, y) => C.severityRank(al[y].severity) - C.severityRank(al[x].severity));
+      if (alertFilter !== 'ALL') h += `<div class="small">Showing only <b>${esc(alertFilter)}</b> alerts. Choose <b>All</b> above to see every alert.</div>`;
+      const order = al.map((a, i) => i).filter(i => passesFilter(al[i])).sort((x, y) => C.severityRank(al[y].severity) - C.severityRank(al[x].severity));
       h += order.slice(0, 80).map(i => alertCard(al[i], i)).join('');
       if (order.length > 80) h += `<div class="small">Showing the 80 highest-severity alerts of ${order.length}.</div>`;
     }
@@ -464,7 +536,8 @@
       s1 = `<p><strong>${esc(a.event || 'Alert')}</strong>${a.headline ? ': ' + esc(a.headline) : ''}</p>
         <p>${pill('OFFICIAL')}${pill('CURRENT')}</p>
         <p class="small">Issued by ${esc(a.sender || 'unknown sender')} at ${fmt(a.sent)}${a.expires ? ', expires ' + fmt(a.expires) : ''}. Severity ${esc(a.severity || 'not given')}, urgency ${esc(a.urgency || 'not given')}, certainty ${esc(a.certainty || 'not given')} (as written by the agency).</p>
-        ${prov({ source: 'NDMA SACHET / ' + (a.sender || 'issuing agency'), kind: 'WARNING (as issued)', dataDate: a.sent, fetchedAt: D.alerts && D.alerts.generated_at, status: 'CURRENT' })}`;
+        ${prov({ source: 'NDMA SACHET / ' + (a.sender || 'issuing agency'), kind: 'WARNING (as issued)', dataDate: a.sent, fetchedAt: D.alerts && D.alerts.generated_at, status: 'CURRENT' })}
+        ${extraNote(a) ? `<p class="reason warn">${esc(extraNote(a))}</p>` : ''}${rainEvidenceHtml(a)}`;
     } else if (sig.type === 'lake') {
       const p = sig.props, si = sourceInfo('glacial_lakes_cwc');
       s1 = `<p><strong>${esc(p.name || 'Glacial lake ' + p.lid)}</strong>${p.state ? ', ' + esc(p.state) : ''}. Outline area ${p.area_ha_calc != null ? (+p.area_ha_calc).toFixed(1) + ' ha (calculated)' : 'unknown'}.</p>
@@ -629,6 +702,7 @@
       $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + t.dataset.tab));
     });
     document.addEventListener('click', e => {
+      const f = e.target.closest('[data-alert-filter]'); if (f && !f.disabled) { setAlertFilter(f.dataset.alertFilter); return; }
       const b = e.target.closest('[data-chain-alert]'); if (b && !b.disabled) { selectAlert(+b.dataset.chainAlert); return; }
       const lk = e.target.closest('[data-lake]'); if (lk) { $$('.card.sel').forEach(c => c.classList.remove('sel')); lk.classList.add('sel'); selectLake(lk.dataset.lake); return; }
       const h = e.target.closest('[data-hit]');

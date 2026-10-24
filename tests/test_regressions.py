@@ -210,6 +210,13 @@ check(_m("Haryana-SDMA", ["1 districts of Haryana"], "storm over Ambala, Jind") 
 check(_m("Haryana-SDMA", ["Haryana"], "heavy rain near Bilaspur") == ([], "UNMATCHED"), "a name that exists only in OTHER states is never matched across state lines")
 check(_m("Uttarakhand-SDMA", ["iqbalpura jhabrera roorkee and adjoining areas"], "") == ([], "UNMATCHED"), "a tehsil-only alert stays unmatched")
 check(_m("Himachal-Pradesh-SDMA", ["Bilaspur, Himachal Pradesh"]) == (["b"], "NAME_MATCH"), "exact area names still match first")
+# 17b. agencies write "A, B districts of <state>": the LAST name must still match; spelling variants join exact matches, same state only
+check(_m("Haryana-SDMA", ["Ambala, Jind districts of Haryana"]) == (["e", "f"], "NAME_MATCH"), "last name in 'A, B districts of <state>' is matched (suffix no longer breaks it)")
+_D2 = gpd.GeoDataFrame({"did": ["g", "h"], "name": ["Villupuram", "Chennai"], "state": ["Tamil Nadu", "Tamil Nadu"]}, geometry=[_Pt(i, i) for i in range(2)], crs="EPSG:4326")
+_D3 = gpd.GeoDataFrame({"did": ["h", "j"], "name": ["Chennai", "Villupuram"], "state": ["Tamil Nadu", "Kerala"]}, geometry=[_Pt(i, i) for i in range(2)], crs="EPSG:4326")
+_m2 = lambda d: fetch_live.match_districts({"sender": "IMD-Chennai", "areas": ["Chennai, Viluppuram districts of Tamil Nadu"], "headline": "", "description": "", "instruction": "", "polygons": []}, d)
+check(_m2(_D2) == (["g", "h"], "NAME_AND_FUZZY_MATCH"), "a spelling variant is added to exact matches and labelled as such")
+check(_m2(_D3) == (["h"], "NAME_MATCH"), "a spelling variant that exists only in ANOTHER state is never added")
 check(fetch_live.stated_districts(["11 districts of Punjab"]) == 11 and fetch_live.stated_districts(["Ganga, Khagaria, Bihar"]) is None, "stated district count is parsed only when present")
 
 # 18. one shared time budget caps the whole live stage

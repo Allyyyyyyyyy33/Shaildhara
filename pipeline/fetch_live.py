@@ -100,7 +100,7 @@ def cap_polygon(text):
 
 
 def match_districts(alert, dists):
-    """Match an alert to district ids. Method is recorded: POLYGON (geometric); NAME_MATCH (area name); FUZZY_NAME_MATCH / TEXT_NAME_MATCH (state-constrained, lower confidence); else UNMATCHED."""
+    """Match an alert to district ids. Method is recorded: POLYGON (geometric); NAME_MATCH (area name); NAME_AND_FUZZY_MATCH (area name, plus spelling variants in the same state); FUZZY_NAME_MATCH / TEXT_NAME_MATCH (state-constrained, lower confidence); else UNMATCHED."""
     if dists is None:
         return [], "NO_DISTRICT_LAYER"
     polys = [cap_polygon(p) for p in alert.get("polygons", [])]
@@ -122,6 +122,8 @@ def match_districts(alert, dists):
     ids = []
     pieces = []
     for area in alert.get("areas", []):
+        # Agencies write "A, B, C districts of <state>": without this the LAST name arrives as "C districts of <state>" and never matches.
+        area = re.sub(r"\s+districts?\s+of\s+.*$", "", area, flags=re.I)
         for piece in re.split(r"[;,/]|\band\b", area):
             pieces.append(piece)
             key = normalise_name(piece)
@@ -132,6 +134,11 @@ def match_districts(alert, dists):
         ids = [i for i in ids if i[1] == state]
     ids = [i[0] for i in ids]
     if ids:
+        if state:  # names that did not match exactly (spelling variants such as Kancheepuram / Kanchipuram): same strict, state-only fuzzy rule
+            leftover = [p for p in pieces if normalise_name(p) not in names]
+            fz = fuzzy_district_ids(leftover, dists, state)
+            if set(fz) - set(ids):
+                return sorted(set(ids) | set(fz)), "NAME_AND_FUZZY_MATCH"
         return sorted(set(ids)), "NAME_MATCH"
     # Nothing matched exactly. Try two lower-confidence, STATE-CONSTRAINED fallbacks (a name is never matched across state lines).
     if state:
