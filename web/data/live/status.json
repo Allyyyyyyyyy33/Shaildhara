@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-26T04:40:19+00:00",
+  "generated_at": "2026-10-26T12:53:24+00:00",
   "sources": {
     "sachet": {
       "id": "sachet",
@@ -9,8 +9,8 @@
       "status": "OK",
       "detail": "6 current alert(s) from 12 feed(s)",
       "records": 6,
-      "fetched_at": "2026-10-26T04:40:19+00:00",
-      "data_date": "2026-10-26T09:56:03+05:30",
+      "fetched_at": "2026-10-26T12:53:24+00:00",
+      "data_date": "2026-10-26T16:46:52+05:30",
       "blockers": [],
       "feeds_ok": [
         "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
@@ -34,12 +34,12 @@
       "kind": "OBSERVED",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "108 station observation(s) from 69 recently updated dataset(s)",
-      "records": 108,
-      "fetched_at": "2026-10-26T04:40:49+00:00",
+      "detail": "104 station observation(s) from 69 recently updated dataset(s)",
+      "records": 104,
+      "fetched_at": "2026-10-26T12:54:06+00:00",
       "data_date": "2026-10-25T08:02:00+00:00",
       "blockers": [
-        "NWDP time budget reached: 240 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times"
+        "NWDP time budget reached: 250 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times"
       ]
     },
     "imd": {
@@ -50,7 +50,7 @@
       "status": "NEEDS_API_KEY",
       "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
       "records": 0,
-      "fetched_at": "2026-10-26T04:56:08+00:00",
+      "fetched_at": "2026-10-26T13:09:21+00:00",
       "data_date": null,
       "blockers": [
         "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -64,7 +64,7 @@
       "status": "DISABLED",
       "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
       "records": 0,
-      "fetched_at": "2026-10-26T04:56:08+00:00",
+      "fetched_at": "2026-10-26T13:09:21+00:00",
       "data_date": null,
       "blockers": []
     }
