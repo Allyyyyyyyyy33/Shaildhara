@@ -246,8 +246,9 @@
     const btn = (key, label, n) => `<button class="sm filt${alertFilter === key ? ' on' : ''}" data-alert-filter="${esc(key)}" aria-pressed="${alertFilter === key}" ${n === 0 ? 'disabled' : ''}>${esc(label)} (${n})</button>`;
     const states = Array.from(stateSet).sort();
     return `<div class="card overview"><h3>National overview</h3>
-      <div class="stats"><div class="stat"><b>${al.length}</b><span>alerts in effect</span></div><div class="stat"><b>${stateSet.size}</b><span>states / UTs</span></div><div class="stat"><b>${al.filter(isRain).length}</b><span>rain alerts</span></div><div class="stat"><b>${al.filter(a => C.severityRank(a.severity) >= 3).length}</b><span>Severe or higher</span></div></div>
-      <div class="small">States / UTs with alerts: ${states.length ? esc(states.join(', ')) : 'none matched'}</div>
+      <div class="stats"><div class="stat"><b>${al.length}</b><span>alerts in effect</span></div><div class="stat"><b>${stateSet.size}</b><span>states / UTs matched</span></div><div class="stat"><b>${al.filter(isRain).length}</b><span>rain alerts</span></div><div class="stat"><b>${al.filter(a => C.severityRank(a.severity) >= 3).length}</b><span>Severe or higher</span></div></div>
+      <div class="small">${states.length ? 'States / UTs with matched districts: ' + esc(states.join(', ')) : 'No alert area could be matched to a district yet.'}</div>
+      <div class="small">Issued by: ${esc(Object.entries(al.reduce((m, a) => { const k = a.sender || 'unknown'; m[k] = (m[k] || 0) + 1; return m; }, {})).sort((x, y) => y[1] - x[1]).map(e => e[0] + ' (' + e[1] + ')').join(', '))}</div>
       <div class="small" style="margin-top:6px">Show only:</div>
       <div class="row" id="alert-filters">${btn('ALL', 'All', al.length)}${fixed.map(k => btn(k, k, counts[k] || 0)).join('')}${others.map(k => btn(k, k, counts[k])).join('')}</div>
       <div class="small">${pill('OFFICIAL')} The map colours districts by the alerts being shown. These are counts of alerts, not storms: the same weather can appear in alerts from several agencies. States come from the districts each alert was matched to, so areas that could not be matched are missed. Severity is as written by the issuing agency.</div></div>`;
@@ -263,8 +264,8 @@
     const sev = C.severityRank(a.severity);
     const entry = G && D.anchors ? C.entryReachesForDistricts(G, D.anchors, a.districts, 40) : [];
     const can = entry.length > 0;
-    const why = !a.districts.length ? 'No district could be matched to this alert, so no river connection can be computed.'
-      : !G ? 'River network not built yet (see Sources).' : (!can ? (extraNote(a) ? 'No mapped river reaches were found in the districts of the official area list.' : 'No river reaches found in the alerted districts.') : '');
+    const why = !a.districts.length ? 'The place names in this alert could not be matched to a district, so no river path can be drawn. Open it to see the alert as issued and what this kind of event can lead to.'
+      : !G ? 'The river network is not loaded, so no river path can be drawn. Open it to see the alert as issued.' : (!can ? 'No mapped river reaches were found inside the alerted districts. Open it to see the alert as issued and what this kind of event can lead to.' : '');
     const status = C.alertActive(a) ? 'CURRENT' : 'STALE';
     return `<div class="card" data-alert="${i}">
       <h3>${esc(a.event || a.headline || 'Alert')}</h3>
@@ -273,7 +274,7 @@
       <div class="meta">${esc((a.areas || []).slice(0, 3).join('; '))}${(a.areas || []).length > 3 ? ' ...' : ''}</div>
       ${C.nonEnglish(a.description || a.headline) ? '<div class="meta">Text is shown exactly as issued, in the agency\'s language (not translated).</div>' : ''}
       <div class="meta">Districts matched: ${a.districts.length}${a.districts_stated ? ' of ' + a.districts_stated + ' stated' : ''} (${esc(MATCH_LABEL[a.match_method] || a.match_method)})</div>
-      <button class="chain-btn" data-chain-alert="${i}" ${can ? '' : 'disabled'}>SHOW ME THE CHAIN</button>
+      <button class="chain-btn${can ? '' : ' secondary'}" data-chain-alert="${i}">${can ? 'SHOW ME THE CHAIN' : 'OPEN ALERT DETAILS'}</button>
       ${why ? `<div class="reason">${esc(why)}</div>` : ''}
       ${extraNote(a) ? `<div class="reason warn">${esc(extraNote(a))}</div>` : ''}
       ${prov({ source: 'NDMA SACHET (' + (a.sender || 'issuing agency') + ')', kind: 'WARNING (official, as issued)', dataDate: a.sent, fetchedAt: D.alerts.generated_at, status: 'CURRENT' })}
@@ -478,8 +479,12 @@
       return { starts: [r] };
     }
     const dids = sig.type === 'alert' ? sig.alert.districts : [sig.did];
+    if (sig.type === 'alert' && !dids.length) {
+      const named = (sig.alert.areas || []).filter((x, i, arr) => arr.indexOf(x) === i).slice(0, 3).join('; ');
+      return { starts: [], note: 'The area named in this alert' + (named ? ' (' + named + ')' : '') + ' is a stretch of coast, a sub-district area, an abbreviation or a state-level phrase, not a district that matches SHAILDHARA\'s district boundaries. SHAILDHARA does not guess, so no river path is drawn. The alert, its official wording and the official guidance for this kind of event are shown in steps 1 and 2.' };
+    }
     const starts = D.anchors ? C.entryReachesForDistricts(G, D.anchors, dids, 40) : [];
-    return starts.length ? { starts } : { starts: [], note: 'No river reaches in the network dataset intersect these districts.' };
+    return starts.length ? { starts } : { starts: [], note: 'No mapped river reaches lie inside these districts in the network data.' };
   }
 
   function closeChain() { anim.token++; $('#chainpanel').hidden = true; chainGroup.clearLayers(); current = null; $$('.card.sel').forEach(c => c.classList.remove('sel')); }
@@ -548,6 +553,7 @@
         <p>${pill('OFFICIAL')}${pill('CURRENT')}</p>
         <p class="small">Issued by ${esc(a.sender || 'unknown sender')} at ${fmt(a.sent)}${a.expires ? ', expires ' + fmt(a.expires) : ''}. Severity ${esc(a.severity || 'not given')}, urgency ${esc(a.urgency || 'not given')}, certainty ${esc(a.certainty || 'not given')} (as written by the agency).</p>
         ${prov({ source: 'NDMA SACHET / ' + (a.sender || 'issuing agency'), kind: 'WARNING (as issued)', dataDate: a.sent, fetchedAt: D.alerts && D.alerts.generated_at, status: 'CURRENT' })}
+        ${(a.areas || []).length ? `<p class="small">Area named in the alert: ${esc((a.areas || []).filter((x, i, arr) => arr.indexOf(x) === i).slice(0, 6).join('; '))}${a.districts.length ? '' : ' (not matched to a district)'}</p>` : ''}
         ${extraNote(a) ? `<p class="reason warn">${esc(extraNote(a))}</p>` : ''}${rainEvidenceHtml(a)}`;
     } else if (sig.type === 'lake') {
       const p = sig.props, si = sourceInfo('glacial_lakes_cwc');
@@ -569,7 +575,8 @@
     if (sig.type === 'alert') {
       const a = sig.alert;
       s2 = (gd ? guideList(gd, 'leads_to', 'What ' + gd.label.toLowerCase() + ' can lead to, as described by the agency that issues these warnings:') + guideSource(gd)
-              + '<p class="small">This is general official guidance for this type of event. It is not a forecast for this location.</p>' : '')
+              + '<p class="small">This is general official guidance for this type of event. It is not a forecast for this location.</p>'
+              : '<p class="small">' + esc((a.event || 'This alert') + ' does not name a hazard that SHAILDHARA holds official guidance for yet. The issuing agency\'s own text is shown as issued below, and the original alert has the full detail.') + '</p>')
         + `<p>${pill('OFFICIAL', 'This alert, as issued')}</p>
         <p class="small">${esc(a.description || a.headline || 'The issuing agency gave no description text for this alert.')}</p>${a.instruction ? `<p class="small">Instruction as issued: ${esc(a.instruction)}</p>` : ''}
         ${safeUrl(a.cap_url) ? `<p class="small"><a href="${esc(safeUrl(a.cap_url))}" target="_blank" rel="noopener">Original alert (CAP)</a></p>` : ''}`;
@@ -632,7 +639,7 @@
       ? guideList(gd, 'consequences', 'Consequences listed by the agency for this type of event:') + guideSource(gd) : '';
     steps.push(stepHtml(6, 'Potential consequences',
       (cons || `<p>${pill('NODATA', 'Not listed')} No official consequence list is loaded for this type of event.</p>`) +
-      `<p class="small">Figures for economic loss or people affected are left out until a validated official source exists for them. The exposure above shows what is located near the river; what is actually affected depends on the real event and is for the responsible authorities to judge.</p>`));
+      `<p class="small">Figures for economic loss or people affected are left out until a validated official source exists for them. ${traced ? 'The exposure above shows what is located near the river; ' : ''}What is actually affected depends on the real event and is for the responsible authorities to judge.</p>`));
 
     // 7. investigate
     const rv = traced && sum.rivers.length ? sum.rivers.slice(0, 3).join(', ') : 'the rivers shown on the map';
