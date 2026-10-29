@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-28T20:32:11+00:00",
+ "generated_at": "2026-10-29T01:09:20+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -11,11 +11,11 @@
   "river_reaches_total": 261790,
   "river_reaches_exported": 9469,
   "districts_with_river": 724,
-  "alerts_in_file": 21,
-  "alerts_unexpired": 20,
-  "alerts_unmatched": 7,
-  "stations": 147,
-  "observations": 147,
+  "alerts_in_file": 22,
+  "alerts_unexpired": 22,
+  "alerts_unmatched": 8,
+  "stations": 146,
+  "observations": 146,
   "exposure_layers_populated": 8,
   "exposure_layers_unavailable": [
    "land_cover",
@@ -159,7 +159,7 @@
    "glacial_lakes": 0,
    "river_reaches": 438,
    "stations": 6,
-   "active_alerts": 3
+   "active_alerts": 2
   },
   {
    "name": "Maharashtra",
@@ -219,7 +219,7 @@
    "glacial_lakes": 0,
    "river_reaches": 254,
    "stations": 10,
-   "active_alerts": 2
+   "active_alerts": 4
   },
   {
    "name": "Punjab",
@@ -279,7 +279,7 @@
    "glacial_lakes": 0,
    "river_reaches": 31,
    "stations": 2,
-   "active_alerts": 2
+   "active_alerts": 0
   },
   {
    "name": "Uttar Pradesh",
@@ -288,7 +288,7 @@
    "districts": 75,
    "glacial_lakes": 0,
    "river_reaches": 598,
-   "stations": 5,
+   "stations": 4,
    "active_alerts": 0
   },
   {
@@ -299,7 +299,7 @@
    "glacial_lakes": 15,
    "river_reaches": 427,
    "stations": 1,
-   "active_alerts": 0
+   "active_alerts": 2
   },
   {
    "name": "West Bengal",
@@ -442,22 +442,22 @@
    "label": "NDMA SACHET official alerts (CAP)",
    "category": "AVAILABLE_VERIFIED",
    "update": "live",
-   "records": 21,
+   "records": 22,
    "source_status": "OK",
-   "data_date": "2026-10-29T01:18:12+05:30",
+   "data_date": "2026-10-29T06:20:44+05:30",
    "source_url": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
-   "note": "20 unexpired at build time; district matching by area name (lower confidence) or polygon."
+   "note": "22 unexpired at build time; district matching by area name (lower confidence) or polygon."
   },
   {
    "id": "nwdp_telemetry",
    "label": "CWC / NWDP station readings",
    "category": "AVAILABLE_INCOMPLETE",
    "update": "periodic",
-   "records": 147,
+   "records": 146,
    "source_status": "OK",
    "data_date": "2026-10-27T23:00:00+00:00",
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
-   "note": "147 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
+   "note": "146 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
   {
    "id": "imd_api",
@@ -530,25 +530,25 @@
   {
    "id": "sachet",
    "status": "OK",
-   "records": 21,
-   "data_date": "2026-10-29T01:18:12+05:30",
-   "fetched_at": "2026-10-28T20:15:04+00:00",
-   "detail": "21 current alert(s) from 12 feed(s)"
+   "records": 22,
+   "data_date": "2026-10-29T06:20:44+05:30",
+   "fetched_at": "2026-10-29T00:53:09+00:00",
+   "detail": "22 current alert(s) from 12 feed(s)"
   },
   {
    "id": "nwdp_cwc",
    "status": "OK",
-   "records": 147,
+   "records": 146,
    "data_date": "2026-10-27T23:00:00+00:00",
-   "fetched_at": "2026-10-28T20:16:57+00:00",
-   "detail": "147 station observation(s) from 70 recently updated dataset(s)"
+   "fetched_at": "2026-10-29T00:54:07+00:00",
+   "detail": "146 station observation(s) from 70 recently updated dataset(s)"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-28T20:32:11+00:00",
+   "fetched_at": "2026-10-29T01:09:20+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-28T20:32:11+00:00",
+   "fetched_at": "2026-10-29T01:09:20+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
