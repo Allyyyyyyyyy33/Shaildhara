@@ -69,6 +69,10 @@ display horizon) - **Not available** (no reliable machine-readable information e
 * **Downstream path:** follows the drawing direction of OpenStreetMap waterways. It is not a hydrological model, not an official river
   map and not a flow, arrival-time or inundation forecast. Where a river forks, a fixed rule picks one branch; the count of such forks
   is shown in the interface. Gaps or mis-drawn waterways can break a path.
+* **What an event can lead to, and its consequences:** taken from `web/data/hazard_guidance.json`, a hand-curated file where every entry
+  cites an official document (IMD National Bulletin "Impact Expected" sections for heavy rain and cyclones; NDMA's GLOF guidelines for
+  glacial lakes). It is general guidance for that type of event, shown with its source link, never a forecast for a place. To add a type
+  of event, add an entry with an institution, title and https link; entries without a source link are ignored.
 * **Exposure:** what lies within a 2 km corridor of the traced reaches. Not damage, not risk, not people affected.
 
 ## Honest limits

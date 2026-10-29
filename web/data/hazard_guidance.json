@@ -1,0 +1,63 @@
+{
+  "_about": "Hand-curated from official Indian government documents. Each entry says what a type of event is officially described as leading to. It is general guidance for that type of event, not a forecast for any location. Edit this file to add entries; every entry needs an institution, a title and a link.",
+  "checked_on": "2026-10-28",
+  "entries": [
+    {
+      "id": "heavy_rain",
+      "applies_to": "alert",
+      "match_event": "heavy rain",
+      "label": "Heavy to extremely heavy rain",
+      "leads_to": [
+        "Localised landslides, mudslides and landslips in hilly areas",
+        "Water logging"
+      ],
+      "consequences": [
+        "Damage to plantation, horticulture and standing crops",
+        "Partial damage to vulnerable structures; minor damage to kutcha houses, huts and roads",
+        "Road and rail traffic may be affected"
+      ],
+      "source": {
+        "institution": "India Meteorological Department (IMD)",
+        "title": "National Bulletin No. 7, 8 Sep 2025, section 'Impact Expected' for very heavy / extremely heavy rainfall",
+        "url": "https://rsmcnewdelhi.imd.gov.in/uploads/archive/1/1_6fd0c6_National__Bulletin_No_7_Dated_08_Sep_2025_0530IST.pdf"
+      }
+    },
+    {
+      "id": "cyclone",
+      "applies_to": "alert",
+      "match_event": "cyclon",
+      "label": "Cyclone",
+      "leads_to": [
+        "Storm surge above the normal tide along the coast (warned separately by IMD)",
+        "Inundation of low-lying coastal areas from heavy rain and flash floods",
+        "Localised flooding of roads and water logging in low-lying areas",
+        "Riverine flooding in some river catchments"
+      ],
+      "consequences": [
+        "Damage to paddy, horticultural and standing crops from inundation and winds",
+        "Disruption of traffic from water logging and squally or gale winds"
+      ],
+      "source": {
+        "institution": "India Meteorological Department (IMD)",
+        "title": "National Bulletin No. 37, 30 Nov 2025, cyclone warning: storm surge warning and 'Impact Expected'",
+        "url": "https://rsmcnewdelhi.imd.gov.in/uploads/archive/1/1_6ce152_37.National_Bulletin_No_37-30Nov2025_0530IST.pdf"
+      }
+    },
+    {
+      "id": "glacial_lake",
+      "applies_to": "lake",
+      "match_event": "",
+      "label": "Glacial lake",
+      "leads_to": [
+        "Glacial lake outburst flood (GLOF) and related flash floods, which NDMA names as a serious risk to vulnerable mountain communities"
+      ],
+      "consequences": [],
+      "note": "Being in the inventory does not mean this lake is hazardous. Whether a particular lake could breach needs a lake-specific study; the inventory does not say.",
+      "source": {
+        "institution": "National Disaster Management Authority (NDMA)",
+        "title": "Guidelines on Management of Glacial Lake Outburst Floods (GLOFs), Oct 2020 (summary on PreventionWeb)",
+        "url": "https://www.preventionweb.net/publication/national-disaster-management-authority-guidelines-management-glacial-lake-outburst"
+      }
+    }
+  ]
+}

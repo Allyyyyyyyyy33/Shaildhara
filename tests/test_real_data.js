@@ -39,6 +39,15 @@ console.log('     lake link policy on real data:', JSON.stringify(policy));
 ok(policy.bad === 0, 'no lake link longer than 5 km (or without a distance) is ever traced');
 ok(policy.traceable + policy.refused === lakes.features.length, 'every lake is either traceable as a proximity candidate or explicitly refused');
 
+
+// official hazard guidance file: every entry has a source institution, title and https link; current alerts are matched where possible
+const gfile = JSON.parse(fs.readFileSync(path.join(dir, 'hazard_guidance.json'), 'utf8'));
+ok(gfile.entries.length >= 3 && gfile.entries.every(e => e.source && e.source.institution && e.source.title && /^https:\/\//.test(e.source.url) && Array.isArray(e.leads_to) && e.leads_to.length), 'every guidance entry has institution, title, https link and content');
+if (alerts && alerts.alerts) {
+  const m = alerts.alerts.filter(a => C.guidanceFor(gfile.entries, 'alert', a.event)).length;
+  console.log('     alerts with official guidance:', m, 'of', alerts.alerts.length);
+}
+
 // one concrete, verifiable demonstration: the lake whose path crosses the most districts
 let best = null;
 for (const f of linked) {

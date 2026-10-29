@@ -58,7 +58,7 @@
       states: 'data/states.geojson', districts: 'data/districts.geojson', lakes: 'data/glacial_lakes.geojson', net: 'data/network/reaches.json',
       anchors: 'data/anchors.json', expo: 'data/exposure/reach_exposure.json', search: 'data/search_index.json', sources: 'data/sources.json',
       build: 'data/build_status.json', audit: 'data/audit.json', conn: 'data/connectivity_report.json', alerts: 'data/live/alerts.json',
-      live: 'data/live/status.json', coverage: 'data/coverage.json', obs: 'data/live/river_observations.json', nwdpcat: 'data/live/nwdp_catalogue.json',
+      live: 'data/live/status.json', guide: 'data/hazard_guidance.json', coverage: 'data/coverage.json', obs: 'data/live/river_observations.json', nwdpcat: 'data/live/nwdp_catalogue.json',
     };
     await Promise.all(Object.entries(paths).map(async ([k, p]) => { D[k] = await getJSON(p); }));
     // Shape guards: a file that parses but has the wrong shape is treated as absent, never allowed to break a panel.
@@ -66,6 +66,7 @@
     if (D.alerts && (typeof D.alerts !== 'object' || !Array.isArray(D.alerts.alerts))) D.alerts = D.alerts && typeof D.alerts === 'object' ? Object.assign(D.alerts, { alerts: [], malformed: true }) : null;
     if (D.obs && !Array.isArray(D.obs.observations)) D.obs = null;
     if (D.live && typeof D.live !== 'object') D.live = null;
+    if (D.guide && !Array.isArray(D.guide.entries)) D.guide = null;
     G = D.net && D.net.ids ? C.makeGraph(D.net) : null;
     // A reading without finite coordinates and value cannot be plotted (NaN arrives as null): drop it instead of crashing the map.
     if (D.obs && Array.isArray(D.obs.observations)) {
@@ -508,6 +509,16 @@
     renderChain();
   }
 
+  function guideSource(g) {
+    const u = safeUrl(g.source.url);
+    return '<p class="small">' + esc(g.source.institution) + ': ' + (u ? '<a href="' + esc(u) + '" target="_blank" rel="noopener">' + esc(g.source.title) + '</a>' : esc(g.source.title)) + '</p>';
+  }
+  function guideList(g, key, lead) {
+    const items = (g[key] || []);
+    if (!items.length) return '';
+    return '<p>' + pill('OFFICIAL', 'Official guidance') + ' ' + esc(lead) + '</p><ul>' + items.map(i => '<li>' + esc(i) + '</li>').join('') + '</ul>';
+  }
+
   function methodNote() {
     const o = D.conn && D.conn.stats && D.conn.stats.osm_network;
     const forks = o && o.forks_resolved_by_rule != null ? Number(o.forks_resolved_by_rule).toLocaleString('en-IN') : null;
@@ -551,15 +562,22 @@
     }
     steps.push(stepHtml(1, 'What is changing', s1, true));
 
-    // 2. trigger
+    // 2. what this kind of event can lead to: official guidance first, then the agency's own wording for this alert
     let s2;
+    const gd = sig.type === 'alert' ? C.guidanceFor(D.guide && D.guide.entries, 'alert', sig.alert.event || sig.alert.headline)
+      : sig.type === 'lake' ? C.guidanceFor(D.guide && D.guide.entries, 'lake', '') : null;
     if (sig.type === 'alert') {
       const a = sig.alert;
-      s2 = `<p>${pill('OFFICIAL')} The agency's own wording (SHAILDHARA does not model what this event triggers):</p>
-        <p class="small">${esc(a.description || a.headline || 'No description text in the alert.')}</p>${a.instruction ? `<p class="small">Instruction as issued: ${esc(a.instruction)}</p>` : ''}
+      s2 = (gd ? guideList(gd, 'leads_to', 'What ' + gd.label.toLowerCase() + ' can lead to, as described by the agency that issues these warnings:') + guideSource(gd)
+              + '<p class="small">This is general official guidance for this type of event. It is not a forecast for this location.</p>' : '')
+        + `<p>${pill('OFFICIAL', 'This alert, as issued')}</p>
+        <p class="small">${esc(a.description || a.headline || 'The issuing agency gave no description text for this alert.')}</p>${a.instruction ? `<p class="small">Instruction as issued: ${esc(a.instruction)}</p>` : ''}
         ${safeUrl(a.cap_url) ? `<p class="small"><a href="${esc(safeUrl(a.cap_url))}" target="_blank" rel="noopener">Original alert (CAP)</a></p>` : ''}`;
-    } else s2 = `<p>${pill('NODATA', 'Not inferred')} There is no official event attached to this ${sig.type === 'lake' ? 'lake' : 'district'}, and SHAILDHARA does not guess what might trigger one.</p>`;
-    steps.push(stepHtml(2, 'What it could trigger', s2));
+    } else if (sig.type === 'lake') {
+      s2 = gd ? guideList(gd, 'leads_to', 'What glacial lakes are officially associated with:') + guideSource(gd) + (gd.note ? '<p class="small">' + esc(gd.note) + '</p>' : '')
+              : `<p>${pill('NODATA', 'Not available')} No official guidance entry is loaded for glacial lakes.</p>`;
+    } else s2 = `<p>${pill('NODATA', 'No event selected')} No alert covers this district right now. Choose an alert or a glacial lake to see what that kind of event can lead to.</p>`;
+    steps.push(stepHtml(2, 'What it could lead to', s2));
 
     // 3. water connection
     let s3;
@@ -609,10 +627,12 @@
     }
     steps.push(stepHtml(5, 'Current exposure along the path', s5));
 
-    // 6. consequences
-    steps.push(stepHtml(6, 'Potential economic / ecological consequences',
-      `<p>${pill('NODATA', 'Not quantified')}</p>
-       <p class="small">SHAILDHARA does not estimate economic or ecological loss, because no validated source exists to do it honestly. The exposure above lists what is located near the river. Whether anything is affected depends on the real event and is for the responsible authorities to judge.</p>`));
+    // 6. consequences: what the official guidance lists; no loss or population figures
+    const cons = gd && gd.consequences && gd.consequences.length
+      ? guideList(gd, 'consequences', 'Consequences listed by the agency for this type of event:') + guideSource(gd) : '';
+    steps.push(stepHtml(6, 'Potential consequences',
+      (cons || `<p>${pill('NODATA', 'Not listed')} No official consequence list is loaded for this type of event.</p>`) +
+      `<p class="small">Figures for economic loss or people affected are left out until a validated official source exists for them. The exposure above shows what is located near the river; what is actually affected depends on the real event and is for the responsible authorities to judge.</p>`));
 
     // 7. investigate
     const rv = traced && sum.rivers.length ? sum.rivers.slice(0, 3).join(', ') : 'the rivers shown on the map';

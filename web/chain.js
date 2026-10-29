@@ -30,6 +30,19 @@
     return { trace: false, tier: 'none', text: 'no river reach within 10 km in the network data' };
   }
 
+  // Official guidance (web/data/hazard_guidance.json): what a type of event is officially described as leading to.
+  // Matches an alert's event text, or a glacial lake. First match wins; no match returns null (the agency's own wording is still shown).
+  function guidanceFor(entries, type, eventText) {
+    if (!Array.isArray(entries)) return null;
+    const ev = String(eventText || '').toLowerCase();
+    for (const e of entries) {
+      if (!e || e.applies_to !== type || !e.source || !e.source.url) continue;
+      if (type === 'lake') return e;
+      if (e.match_event && ev.indexOf(String(e.match_event).toLowerCase()) !== -1) return e;
+    }
+    return null;
+  }
+
   function makeGraph(net) {
     return {
       n: net.ids.length, ids: net.ids, next: net.next, end: net.end, len: net.len_km, ord: net.ord, dis: net.dis_cms, acc: net.acc || null,
@@ -235,5 +248,5 @@
     return { inside, near, rainStationsTotal: rain.length };
   }
 
-  return { LABELS, lakeLink, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath, geometryContains, rainfallEvidence };
+  return { LABELS, lakeLink, guidanceFor, makeGraph, tracePath, traceMany, summarise, sumExposure, freshness, alertActive, obsFlag, nonEnglish, severityRank, entryReachesForDistricts, haversineKm, stationsNearPath, geometryContains, rainfallEvidence };
 });

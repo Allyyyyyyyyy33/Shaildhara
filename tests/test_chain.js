@@ -59,5 +59,16 @@ ok(C.lakeLink('weak', 7.2).trace === false && C.lakeLink('unlinked', null).trace
 ok(/too far/.test(C.lakeLink('weak', 7.2).text) && /7\.2 km/.test(C.lakeLink('weak', 7.2).text), 'weak link explains itself with the real distance');
 ok(C.LABELS.PROXIMITY && /unverified/i.test(C.LABELS.PROXIMITY.text), 'a proximity label exists and says unverified');
 ok(!/no current data/i.test(C.LABELS.NODATA.text), 'the not-available label is not alarming');
+
+// 9. official guidance: matched by event text; lakes get the glacial-lake entry; no match is null; entries without a source link are ignored
+const GE = [{ applies_to: 'alert', match_event: 'heavy rain', label: 'r', leads_to: ['x'], source: { institution: 'i', title: 't', url: 'https://example.org' } },
+            { applies_to: 'alert', match_event: 'cyclon', label: 'c', leads_to: ['y'], source: { institution: 'i', title: 't', url: 'https://example.org' } },
+            { applies_to: 'lake', match_event: '', label: 'l', leads_to: ['z'], source: { institution: 'i', title: 't', url: 'https://example.org' } },
+            { applies_to: 'alert', match_event: 'flood', label: 'nosrc', leads_to: ['q'] }];
+ok(C.guidanceFor(GE, 'alert', 'Very Heavy Rain, Thundershowers, and Strong winds').label === 'r', 'heavy-rain alerts match the rain guidance');
+ok(C.guidanceFor(GE, 'alert', 'Cyclone').label === 'c', 'cyclone alerts match the cyclone guidance');
+ok(C.guidanceFor(GE, 'lake', '').label === 'l', 'a glacial lake gets the glacial-lake guidance');
+ok(C.guidanceFor(GE, 'alert', 'Flood') === null, 'an entry without a source link is never used');
+ok(C.guidanceFor(GE, 'alert', 'Light Rain') === null && C.guidanceFor(null, 'alert', 'x') === null, 'no match or no file gives null');
 console.log(fails ? `${fails} FAILED` : 'ALL CHAIN TESTS PASSED');
 process.exit(fails ? 1 : 0);
