@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-10-31T05:49:24+00:00",
+ "generated_at": "2026-10-31T12:35:51+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -11,11 +11,11 @@
   "river_reaches_total": 261790,
   "river_reaches_exported": 9469,
   "districts_with_river": 724,
-  "alerts_in_file": 8,
-  "alerts_unexpired": 8,
-  "alerts_unmatched": 1,
-  "stations": 374,
-  "observations": 383,
+  "alerts_in_file": 30,
+  "alerts_unexpired": 27,
+  "alerts_unmatched": 18,
+  "stations": 321,
+  "observations": 322,
   "exposure_layers_populated": 8,
   "exposure_layers_unavailable": [
    "land_cover",
@@ -39,7 +39,7 @@
    "glacial_lakes": 0,
    "river_reaches": 256,
    "stations": 29,
-   "active_alerts": 1
+   "active_alerts": 0
   },
   {
    "name": "Arunachal Pradesh",
@@ -58,8 +58,8 @@
    "districts": 33,
    "glacial_lakes": 0,
    "river_reaches": 371,
-   "stations": 6,
-   "active_alerts": 0
+   "stations": 5,
+   "active_alerts": 1
   },
   {
    "name": "Bihar",
@@ -68,7 +68,7 @@
    "districts": 38,
    "glacial_lakes": 0,
    "river_reaches": 340,
-   "stations": 2,
+   "stations": 7,
    "active_alerts": 0
   },
   {
@@ -78,8 +78,8 @@
    "districts": 28,
    "glacial_lakes": 0,
    "river_reaches": 233,
-   "stations": 18,
-   "active_alerts": 0
+   "stations": 17,
+   "active_alerts": 1
   },
   {
    "name": "Goa",
@@ -98,8 +98,8 @@
    "districts": 33,
    "glacial_lakes": 0,
    "river_reaches": 271,
-   "stations": 46,
-   "active_alerts": 0
+   "stations": 43,
+   "active_alerts": 1
   },
   {
    "name": "Haryana",
@@ -118,7 +118,7 @@
    "districts": 12,
    "glacial_lakes": 14,
    "river_reaches": 536,
-   "stations": 0,
+   "stations": 1,
    "active_alerts": 0
   },
   {
@@ -138,8 +138,8 @@
    "districts": 30,
    "glacial_lakes": 0,
    "river_reaches": 391,
-   "stations": 9,
-   "active_alerts": 0
+   "stations": 6,
+   "active_alerts": 1
   },
   {
    "name": "Kerala",
@@ -148,7 +148,7 @@
    "districts": 14,
    "glacial_lakes": 0,
    "river_reaches": 328,
-   "stations": 14,
+   "stations": 9,
    "active_alerts": 0
   },
   {
@@ -158,7 +158,7 @@
    "districts": 52,
    "glacial_lakes": 0,
    "river_reaches": 438,
-   "stations": 21,
+   "stations": 6,
    "active_alerts": 0
   },
   {
@@ -168,8 +168,8 @@
    "districts": 36,
    "glacial_lakes": 0,
    "river_reaches": 763,
-   "stations": 56,
-   "active_alerts": 1
+   "stations": 36,
+   "active_alerts": 0
   },
   {
    "name": "Manipur",
@@ -198,7 +198,7 @@
    "districts": 8,
    "glacial_lakes": 0,
    "river_reaches": 39,
-   "stations": 11,
+   "stations": 0,
    "active_alerts": 0
   },
   {
@@ -218,7 +218,7 @@
    "districts": 30,
    "glacial_lakes": 0,
    "river_reaches": 254,
-   "stations": 52,
+   "stations": 42,
    "active_alerts": 1
   },
   {
@@ -239,7 +239,7 @@
    "glacial_lakes": 0,
    "river_reaches": 262,
    "stations": 15,
-   "active_alerts": 1
+   "active_alerts": 0
   },
   {
    "name": "Sikkim",
@@ -258,7 +258,7 @@
    "districts": 37,
    "glacial_lakes": 0,
    "river_reaches": 243,
-   "stations": 7,
+   "stations": 10,
    "active_alerts": 0
   },
   {
@@ -269,7 +269,7 @@
    "glacial_lakes": 0,
    "river_reaches": 260,
    "stations": 1,
-   "active_alerts": 0
+   "active_alerts": 1
   },
   {
    "name": "Tripura",
@@ -279,7 +279,7 @@
    "glacial_lakes": 0,
    "river_reaches": 31,
    "stations": 3,
-   "active_alerts": 0
+   "active_alerts": 2
   },
   {
    "name": "Uttar Pradesh",
@@ -299,7 +299,7 @@
    "glacial_lakes": 15,
    "river_reaches": 427,
    "stations": 1,
-   "active_alerts": 2
+   "active_alerts": 1
   },
   {
    "name": "West Bengal",
@@ -442,22 +442,22 @@
    "label": "NDMA SACHET official alerts (CAP)",
    "category": "AVAILABLE_VERIFIED",
    "update": "live",
-   "records": 8,
+   "records": 30,
    "source_status": "OK",
-   "data_date": "2026-10-31T09:21:44+05:30",
+   "data_date": "2026-10-31T17:39:23+05:30",
    "source_url": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
-   "note": "8 unexpired at build time; district matching by area name (lower confidence) or polygon."
+   "note": "27 unexpired at build time; district matching by area name (lower confidence) or polygon."
   },
   {
    "id": "nwdp_telemetry",
    "label": "CWC / NWDP station readings",
    "category": "AVAILABLE_INCOMPLETE",
    "update": "periodic",
-   "records": 383,
+   "records": 322,
    "source_status": "OK",
-   "data_date": "2026-11-01T05:00:00+00:00",
+   "data_date": "2026-11-01T12:00:00+00:00",
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
-   "note": "374 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
+   "note": "321 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
   {
    "id": "imd_api",
@@ -530,25 +530,25 @@
   {
    "id": "sachet",
    "status": "OK",
-   "records": 8,
-   "data_date": "2026-10-31T09:21:44+05:30",
-   "fetched_at": "2026-10-31T05:33:31+00:00",
-   "detail": "8 current alert(s) from 12 feed(s)"
+   "records": 30,
+   "data_date": "2026-10-31T17:39:23+05:30",
+   "fetched_at": "2026-10-31T12:18:32+00:00",
+   "detail": "30 current alert(s) from 12 feed(s)"
   },
   {
    "id": "nwdp_cwc",
    "status": "OK",
-   "records": 383,
-   "data_date": "2026-11-01T05:00:00+00:00",
-   "fetched_at": "2026-10-31T05:34:11+00:00",
-   "detail": "383 station observation(s) from 70 recently updated dataset(s)"
+   "records": 322,
+   "data_date": "2026-11-01T12:00:00+00:00",
+   "fetched_at": "2026-10-31T12:20:51+00:00",
+   "detail": "322 station observation(s) from 70 recently updated dataset(s)"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-31T05:49:24+00:00",
+   "fetched_at": "2026-10-31T12:35:51+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-10-31T05:49:24+00:00",
+   "fetched_at": "2026-10-31T12:35:51+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
