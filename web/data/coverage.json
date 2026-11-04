@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-03T23:33:24+00:00",
+ "generated_at": "2026-11-04T06:25:40+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -11,11 +11,11 @@
   "river_reaches_total": 261790,
   "river_reaches_exported": 9469,
   "districts_with_river": 724,
-  "alerts_in_file": 16,
-  "alerts_unexpired": 16,
-  "alerts_unmatched": 8,
-  "stations": 860,
-  "observations": 1040,
+  "alerts_in_file": 10,
+  "alerts_unexpired": 8,
+  "alerts_unmatched": 6,
+  "stations": 854,
+  "observations": 1015,
   "exposure_layers_populated": 8,
   "exposure_layers_unavailable": [
    "land_cover",
@@ -58,8 +58,8 @@
    "districts": 33,
    "glacial_lakes": 0,
    "river_reaches": 371,
-   "stations": 11,
-   "active_alerts": 1
+   "stations": 12,
+   "active_alerts": 0
   },
   {
    "name": "Bihar",
@@ -78,8 +78,8 @@
    "districts": 28,
    "glacial_lakes": 0,
    "river_reaches": 233,
-   "stations": 78,
-   "active_alerts": 1
+   "stations": 77,
+   "active_alerts": 3
   },
   {
    "name": "Goa",
@@ -118,7 +118,7 @@
    "districts": 12,
    "glacial_lakes": 14,
    "river_reaches": 536,
-   "stations": 7,
+   "stations": 9,
    "active_alerts": 0
   },
   {
@@ -158,7 +158,7 @@
    "districts": 52,
    "glacial_lakes": 0,
    "river_reaches": 438,
-   "stations": 107,
+   "stations": 106,
    "active_alerts": 0
   },
   {
@@ -218,7 +218,7 @@
    "districts": 30,
    "glacial_lakes": 0,
    "river_reaches": 254,
-   "stations": 101,
+   "stations": 92,
    "active_alerts": 0
   },
   {
@@ -238,7 +238,7 @@
    "districts": 33,
    "glacial_lakes": 0,
    "river_reaches": 262,
-   "stations": 21,
+   "stations": 19,
    "active_alerts": 0
   },
   {
@@ -258,8 +258,8 @@
    "districts": 37,
    "glacial_lakes": 0,
    "river_reaches": 243,
-   "stations": 102,
-   "active_alerts": 3
+   "stations": 87,
+   "active_alerts": 0
   },
   {
    "name": "Telangana",
@@ -269,7 +269,7 @@
    "glacial_lakes": 0,
    "river_reaches": 260,
    "stations": 74,
-   "active_alerts": 3
+   "active_alerts": 0
   },
   {
    "name": "Tripura",
@@ -442,22 +442,22 @@
    "label": "NDMA SACHET official alerts (CAP)",
    "category": "AVAILABLE_VERIFIED",
    "update": "live",
-   "records": 16,
+   "records": 10,
    "source_status": "OK",
-   "data_date": "2026-11-04T04:42:04+05:30",
+   "data_date": "2026-11-04T11:13:01+05:30",
    "source_url": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
-   "note": "16 unexpired at build time; district matching by area name (lower confidence) or polygon."
+   "note": "8 unexpired at build time; district matching by area name (lower confidence) or polygon."
   },
   {
    "id": "nwdp_telemetry",
    "label": "CWC / NWDP station readings",
    "category": "AVAILABLE_INCOMPLETE",
    "update": "periodic",
-   "records": 1040,
+   "records": 1015,
    "source_status": "OK",
-   "data_date": "2026-11-04T23:00:00+00:00",
+   "data_date": "2026-11-05T06:00:00+00:00",
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
-   "note": "860 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
+   "note": "854 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
   {
    "id": "imd_api",
@@ -530,25 +530,25 @@
   {
    "id": "sachet",
    "status": "OK",
-   "records": 16,
-   "data_date": "2026-11-04T04:42:04+05:30",
-   "fetched_at": "2026-11-03T23:17:01+00:00",
-   "detail": "16 current alert(s) from 12 feed(s)"
+   "records": 10,
+   "data_date": "2026-11-04T11:13:01+05:30",
+   "fetched_at": "2026-11-04T06:09:15+00:00",
+   "detail": "10 current alert(s) from 12 feed(s)"
   },
   {
    "id": "nwdp_cwc",
    "status": "OK",
-   "records": 1040,
-   "data_date": "2026-11-04T23:00:00+00:00",
-   "fetched_at": "2026-11-03T23:18:11+00:00",
-   "detail": "1040 station observation(s) from 70 recently updated dataset(s)"
+   "records": 1015,
+   "data_date": "2026-11-05T06:00:00+00:00",
+   "fetched_at": "2026-11-04T06:10:25+00:00",
+   "detail": "1015 station observation(s) from 70 recently updated dataset(s)"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-03T23:33:24+00:00",
+   "fetched_at": "2026-11-04T06:25:40+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-03T23:33:24+00:00",
+   "fetched_at": "2026-11-04T06:25:40+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
