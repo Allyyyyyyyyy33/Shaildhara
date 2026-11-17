@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T08:05:12+00:00",
+ "generated_at": "2026-11-17T18:46:28+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -298,7 +298,7 @@
    "districts": 13,
    "glacial_lakes": 15,
    "river_reaches": 427,
-   "stations": 0,
+   "stations": 1,
    "active_alerts": 0
   },
   {
@@ -308,7 +308,7 @@
    "districts": 23,
    "glacial_lakes": 0,
    "river_reaches": 232,
-   "stations": 2,
+   "stations": 1,
    "active_alerts": 0
   },
   {
@@ -532,7 +532,7 @@
    "status": "NO_CURRENT_ALERTS",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-17T07:49:30+00:00",
+   "fetched_at": "2026-11-17T18:30:46+00:00",
    "detail": "12 feed(s) read; no unexpired alerts found. This is not an error."
   },
   {
@@ -540,7 +540,7 @@
    "status": "OK",
    "records": 18,
    "data_date": "2026-11-16T21:00:00+00:00",
-   "fetched_at": "2026-11-17T07:49:56+00:00",
+   "fetched_at": "2026-11-17T18:31:12+00:00",
    "detail": "18 station observation(s) from 68 recently updated dataset(s)"
   },
   {
@@ -548,7 +548,7 @@
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-17T08:05:12+00:00",
+   "fetched_at": "2026-11-17T18:46:28+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-17T08:05:12+00:00",
+   "fetched_at": "2026-11-17T18:46:28+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
