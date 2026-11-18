@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-17T18:46:28+00:00",
+ "generated_at": "2026-11-18T03:08:38+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -14,8 +14,8 @@
   "alerts_in_file": 0,
   "alerts_unexpired": 0,
   "alerts_unmatched": 0,
-  "stations": 18,
-  "observations": 18,
+  "stations": 25,
+  "observations": 25,
   "exposure_layers_populated": 8,
   "exposure_layers_unavailable": [
    "land_cover",
@@ -58,7 +58,7 @@
    "districts": 33,
    "glacial_lakes": 0,
    "river_reaches": 371,
-   "stations": 1,
+   "stations": 2,
    "active_alerts": 0
   },
   {
@@ -198,7 +198,7 @@
    "districts": 8,
    "glacial_lakes": 0,
    "river_reaches": 39,
-   "stations": 0,
+   "stations": 4,
    "active_alerts": 0
   },
   {
@@ -238,7 +238,7 @@
    "districts": 33,
    "glacial_lakes": 0,
    "river_reaches": 262,
-   "stations": 0,
+   "stations": 2,
    "active_alerts": 0
   },
   {
@@ -453,11 +453,11 @@
    "label": "CWC / NWDP station readings",
    "category": "AVAILABLE_INCOMPLETE",
    "update": "periodic",
-   "records": 18,
+   "records": 25,
    "source_status": "OK",
-   "data_date": "2026-11-16T21:00:00+00:00",
+   "data_date": "2026-11-17T23:00:00+00:00",
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
-   "note": "18 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
+   "note": "25 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
   {
    "id": "imd_api",
@@ -532,23 +532,23 @@
    "status": "NO_CURRENT_ALERTS",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-17T18:30:46+00:00",
+   "fetched_at": "2026-11-18T02:52:57+00:00",
    "detail": "12 feed(s) read; no unexpired alerts found. This is not an error."
   },
   {
    "id": "nwdp_cwc",
    "status": "OK",
-   "records": 18,
-   "data_date": "2026-11-16T21:00:00+00:00",
-   "fetched_at": "2026-11-17T18:31:12+00:00",
-   "detail": "18 station observation(s) from 68 recently updated dataset(s)"
+   "records": 25,
+   "data_date": "2026-11-17T23:00:00+00:00",
+   "fetched_at": "2026-11-18T02:53:23+00:00",
+   "detail": "25 station observation(s) from 68 recently updated dataset(s)"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-17T18:46:28+00:00",
+   "fetched_at": "2026-11-18T03:08:38+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-17T18:46:28+00:00",
+   "fetched_at": "2026-11-18T03:08:38+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
