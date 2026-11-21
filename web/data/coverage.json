@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-20T20:22:35+00:00",
+ "generated_at": "2026-11-21T02:10:59+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -13,7 +13,7 @@
   "districts_with_river": 724,
   "alerts_in_file": 7,
   "alerts_unexpired": 7,
-  "alerts_unmatched": 3,
+  "alerts_unmatched": 4,
   "stations": 35,
   "observations": 35,
   "exposure_layers_populated": 8,
@@ -22,10 +22,10 @@
    "ecosystems"
   ],
   "live_feeds_ok": [
-   "sachet",
-   "nwdp_cwc"
+   "sachet"
   ],
   "live_feeds_not_working": [
+   "nwdp_cwc",
    "imd",
    "imd_geoserver"
   ]
@@ -279,7 +279,7 @@
    "glacial_lakes": 0,
    "river_reaches": 31,
    "stations": 0,
-   "active_alerts": 2
+   "active_alerts": 1
   },
   {
    "name": "Uttar Pradesh",
@@ -444,18 +444,18 @@
    "update": "live",
    "records": 7,
    "source_status": "OK",
-   "data_date": "2026-11-21T01:14:15+05:30",
+   "data_date": "2026-11-21T06:54:34+05:30",
    "source_url": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
    "note": "7 unexpired at build time; district matching by area name (lower confidence) or polygon."
   },
   {
    "id": "nwdp_telemetry",
    "label": "CWC / NWDP station readings",
-   "category": "AVAILABLE_INCOMPLETE",
+   "category": "BLOCKED",
    "update": "periodic",
    "records": 35,
-   "source_status": "OK",
-   "data_date": "2026-11-19T23:00:00+00:00",
+   "source_status": "BLOCKED",
+   "data_date": null,
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
    "note": "35 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
@@ -531,24 +531,24 @@
    "id": "sachet",
    "status": "OK",
    "records": 7,
-   "data_date": "2026-11-21T01:14:15+05:30",
-   "fetched_at": "2026-11-20T20:06:34+00:00",
+   "data_date": "2026-11-21T06:54:34+05:30",
+   "fetched_at": "2026-11-21T02:10:26+00:00",
    "detail": "7 current alert(s) from 12 feed(s)"
   },
   {
    "id": "nwdp_cwc",
-   "status": "OK",
-   "records": 35,
-   "data_date": "2026-11-19T23:00:00+00:00",
-   "fetched_at": "2026-11-20T20:07:18+00:00",
-   "detail": "35 station observation(s) from 68 recently updated dataset(s)"
+   "status": "BLOCKED",
+   "records": 0,
+   "data_date": null,
+   "fetched_at": "2026-11-21T02:10:56+00:00",
+   "detail": "NWDP search API returned nothing usable. river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationErro"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-20T20:22:35+00:00",
+   "fetched_at": "2026-11-21T02:10:59+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-20T20:22:35+00:00",
+   "fetched_at": "2026-11-21T02:10:59+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],
