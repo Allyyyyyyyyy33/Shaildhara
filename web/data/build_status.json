@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-25T08:23:23+00:00",
+  "generated_at": "2026-11-25T19:12:03+00:00",
   "stages": {
     "static": {
       "started_at": "2026-10-09T11:39:49+00:00",
@@ -130,7 +130,7 @@
       "finished_at": "2026-10-09T11:47:16+00:00"
     },
     "live": {
-      "generated_at": "2026-11-25T08:23:23+00:00",
+      "generated_at": "2026-11-25T19:12:03+00:00",
       "sources": {
         "sachet": {
           "id": "sachet",
@@ -138,10 +138,10 @@
           "kind": "WARNING",
           "evidence": "OFFICIAL",
           "status": "OK",
-          "detail": "12 current alert(s) from 12 feed(s)",
-          "records": 12,
-          "fetched_at": "2026-11-25T08:23:24+00:00",
-          "data_date": "2026-11-25T13:46:01+05:30",
+          "detail": "4 current alert(s) from 12 feed(s)",
+          "records": 4,
+          "fetched_at": "2026-11-25T19:12:03+00:00",
+          "data_date": "2026-11-25T22:35:35+05:30",
           "blockers": [],
           "feeds_ok": [
             "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
@@ -165,12 +165,12 @@
           "kind": "OBSERVED",
           "evidence": "OFFICIAL",
           "status": "BLOCKED",
-          "detail": "NWDP search API returned nothing usable. river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1018)'))) The last successfully read data is kept unchanged.",
+          "detail": "NWDP search API returned nothing usable. river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1018)'))) The last successfully read data is kept unchanged.",
           "records": 0,
-          "fetched_at": "2026-11-25T08:24:26+00:00",
+          "fetched_at": "2026-11-25T19:14:34+00:00",
           "data_date": null,
           "blockers": [
-            "river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1018)')))"
+            "river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1018)')))"
           ]
         },
         "imd": {
@@ -181,7 +181,7 @@
           "status": "NEEDS_API_KEY",
           "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
           "records": 0,
-          "fetched_at": "2026-11-25T08:24:29+00:00",
+          "fetched_at": "2026-11-25T19:14:36+00:00",
           "data_date": null,
           "blockers": [
             "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -195,7 +195,7 @@
           "status": "DISABLED",
           "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
           "records": 0,
-          "fetched_at": "2026-11-25T08:24:29+00:00",
+          "fetched_at": "2026-11-25T19:14:36+00:00",
           "data_date": null,
           "blockers": []
         }
@@ -209,8 +209,8 @@
     "Static data 'ecosystems': No verified programmatic URL. Place file(s) in data/manual/ecosystems/ (No verified programmatic download. Place vector files in data/manual/ecosystems/; exposure is computed only for files present.)",
     "exposure layer 'land_cover': Land-cover tiles not loaded (place ESA WorldCover or NRSC GeoTIFF tiles in data/manual/landcover/)",
     "exposure layer 'ecosystems': No ecosystem polygon files provided (data/manual/ecosystems/)",
-    "Live source 'nwdp_cwc': NWDP search API returned nothing usable. river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1018)'))) The last successfully read data is kept unchanged.",
-    "Live source 'nwdp_cwc': river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: certificate has expired (_ssl.c:1018)')))",
+    "Live source 'nwdp_cwc': NWDP search API returned nothing usable. river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1018)'))) The last successfully read data is kept unchanged.",
+    "Live source 'nwdp_cwc': river water level: Could not reach the server: SSLError: HTTPSConnectionPool(host='nwdp.nwic.gov.in', port=443): Max retries exceeded with url: /robots.txt (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1018)')))",
     "Live source 'imd': IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
     "Live source 'imd': IMD API key required (and possibly IP whitelisting by IMD)"
   ],
