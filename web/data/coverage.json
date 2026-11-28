@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-28T03:32:27+00:00",
+ "generated_at": "2026-11-28T15:42:13+00:00",
  "method": "Counted from the files served under web/data; reference list of 28 states + 8 union territories is typed in.",
  "summary": {
   "states_and_uts_expected": 36,
@@ -13,9 +13,9 @@
   "districts_with_river": 724,
   "alerts_in_file": 7,
   "alerts_unexpired": 7,
-  "alerts_unmatched": 3,
-  "stations": 111,
-  "observations": 111,
+  "alerts_unmatched": 4,
+  "stations": 128,
+  "observations": 128,
   "exposure_layers_populated": 8,
   "exposure_layers_unavailable": [
    "land_cover",
@@ -78,7 +78,7 @@
    "districts": 28,
    "glacial_lakes": 0,
    "river_reaches": 233,
-   "stations": 6,
+   "stations": 5,
    "active_alerts": 0
   },
   {
@@ -89,7 +89,7 @@
    "glacial_lakes": 0,
    "river_reaches": 26,
    "stations": 0,
-   "active_alerts": 0
+   "active_alerts": 1
   },
   {
    "name": "Gujarat",
@@ -228,7 +228,7 @@
    "districts": 22,
    "glacial_lakes": 0,
    "river_reaches": 116,
-   "stations": 1,
+   "stations": 13,
    "active_alerts": 0
   },
   {
@@ -259,7 +259,7 @@
    "glacial_lakes": 0,
    "river_reaches": 243,
    "stations": 8,
-   "active_alerts": 2
+   "active_alerts": 1
   },
   {
    "name": "Telangana",
@@ -328,7 +328,7 @@
    "districts": 1,
    "glacial_lakes": 0,
    "river_reaches": 3,
-   "stations": 1,
+   "stations": 0,
    "active_alerts": 0
   },
   {
@@ -388,8 +388,8 @@
    "districts": 4,
    "glacial_lakes": 0,
    "river_reaches": 15,
-   "stations": 0,
-   "active_alerts": 1
+   "stations": 7,
+   "active_alerts": 0
   }
  ],
  "layers": [
@@ -444,7 +444,7 @@
    "update": "live",
    "records": 7,
    "source_status": "OK",
-   "data_date": "2026-11-28T06:55:25+05:30",
+   "data_date": "2026-11-28T20:23:38+05:30",
    "source_url": "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
    "note": "7 unexpired at build time; district matching by area name (lower confidence) or polygon."
   },
@@ -453,11 +453,11 @@
    "label": "CWC / NWDP station readings",
    "category": "AVAILABLE_INCOMPLETE",
    "update": "periodic",
-   "records": 111,
+   "records": 128,
    "source_status": "OK",
    "data_date": "2026-11-27T23:00:00+00:00",
    "source_url": "https://nwdp.nwic.gov.in/api/3/action/package_search",
-   "note": "111 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
+   "note": "128 stations; only datasets with a recognisable schema are read, within a time budget. Readings are shown as source-reported and are not quality-checked."
   },
   {
    "id": "imd_api",
@@ -531,24 +531,24 @@
    "id": "sachet",
    "status": "OK",
    "records": 7,
-   "data_date": "2026-11-28T06:55:25+05:30",
-   "fetched_at": "2026-11-28T03:16:38+00:00",
-   "detail": "7 current alert(s) from 12 feed(s)"
+   "data_date": "2026-11-28T20:23:38+05:30",
+   "fetched_at": "2026-11-28T15:26:30+00:00",
+   "detail": "7 current alert(s) from 1 feed(s)"
   },
   {
    "id": "nwdp_cwc",
    "status": "OK",
-   "records": 111,
+   "records": 128,
    "data_date": "2026-11-27T23:00:00+00:00",
-   "fetched_at": "2026-11-28T03:17:13+00:00",
-   "detail": "111 station observation(s) from 68 recently updated dataset(s)"
+   "fetched_at": "2026-11-28T15:26:58+00:00",
+   "detail": "128 station observation(s) from 68 recently updated dataset(s)"
   },
   {
    "id": "imd",
    "status": "NEEDS_API_KEY",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-28T03:32:27+00:00",
+   "fetched_at": "2026-11-28T15:42:13+00:00",
    "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step."
   },
   {
@@ -556,7 +556,7 @@
    "status": "DISABLED",
    "records": 0,
    "data_date": null,
-   "fetched_at": "2026-11-28T03:32:27+00:00",
+   "fetched_at": "2026-11-28T15:42:13+00:00",
    "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed."
   }
  ],

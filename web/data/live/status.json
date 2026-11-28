@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-28T03:16:38+00:00",
+  "generated_at": "2026-11-28T15:26:30+00:00",
   "sources": {
     "sachet": {
       "id": "sachet",
@@ -7,24 +7,15 @@
       "kind": "WARNING",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "7 current alert(s) from 12 feed(s)",
+      "detail": "7 current alert(s) from 1 feed(s)",
       "records": 7,
-      "fetched_at": "2026-11-28T03:16:38+00:00",
-      "data_date": "2026-11-28T06:55:25+05:30",
-      "blockers": [],
+      "fetched_at": "2026-11-28T15:26:30+00:00",
+      "data_date": "2026-11-28T20:23:38+05:30",
+      "blockers": [
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_uttarakhand.xml: Connection failed: ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))"
+      ],
       "feeds_ok": [
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_uttarakhand.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_sikkim.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_ladakh.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_assam.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_nagaland.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_manipur.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_mizoram.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_meghalaya.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_tripura.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_bihar.xml",
-        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_punjab.xml"
+        "https://sachet.ndma.gov.in/cap_public_website/rss/rss_india.xml"
       ],
       "feeds_failed": []
     },
@@ -34,12 +25,12 @@
       "kind": "OBSERVED",
       "evidence": "OFFICIAL",
       "status": "OK",
-      "detail": "111 station observation(s) from 68 recently updated dataset(s)",
-      "records": 111,
-      "fetched_at": "2026-11-28T03:17:13+00:00",
+      "detail": "128 station observation(s) from 68 recently updated dataset(s)",
+      "records": 128,
+      "fetched_at": "2026-11-28T15:26:58+00:00",
       "data_date": "2026-11-27T23:00:00+00:00",
       "blockers": [
-        "NWDP time budget reached: 260 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times"
+        "NWDP time budget reached: 257 dataset resource(s) not re-read this run; 0 earlier reading(s) kept with their original observation times"
       ]
     },
     "imd": {
@@ -50,7 +41,7 @@
       "status": "NEEDS_API_KEY",
       "detail": "IMD_API_KEY is not set. Register at https://api.imd.gov.in/public/register.php, then set the key as an environment variable / secret. IMD also describes an IP-whitelisting step.",
       "records": 0,
-      "fetched_at": "2026-11-28T03:32:27+00:00",
+      "fetched_at": "2026-11-28T15:42:13+00:00",
       "data_date": null,
       "blockers": [
         "IMD API key required (and possibly IP whitelisting by IMD)"
@@ -64,7 +55,7 @@
       "status": "DISABLED",
       "detail": "IMD's own map site uses this public service, but it is not a documented API and terms are unclear. Disabled by default; enable only after IMD's nodal officer confirms programmatic use is allowed.",
       "records": 0,
-      "fetched_at": "2026-11-28T03:32:27+00:00",
+      "fetched_at": "2026-11-28T15:42:13+00:00",
       "data_date": null,
       "blockers": []
     }
